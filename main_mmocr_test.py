@@ -26,6 +26,7 @@ def lower_list(data:list):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str, default='data/autoriaNumberplateOcrRu-Military-2022-03-25/train')
+    parser.add_argument('--model', type=str, default='SAR')
     args = parser.parse_args()
     return args
 
@@ -52,7 +53,7 @@ LOWER = True
 if __name__ == '__main__':
     args = get_args()
     cer = load('cer')
-    ocr = MMOCRInferencer(det=None, rec='SAR')
+    ocr = MMOCRInferencer(det=None, rec=args.model)
     dataset_folder = args.data_path
 
     training_data = ImgNamesDataset(dataset_folder)
