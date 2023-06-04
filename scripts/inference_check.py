@@ -92,7 +92,7 @@ if __name__ == '__main__':
                               size=(384, 384))
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size)
 
-    model = model_init(args)
+    model = model_init()
     model.to(args.device)
 
     batch_timing = []
