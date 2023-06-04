@@ -109,7 +109,7 @@ if __name__ == '__main__':
         label_str = processor.batch_decode(labels, skip_special_tokens=True)
         batch_timing.append(time()-start_time)
 
-    output_dir = f"exps/bs{args.batch_size}_{args.device}_trocr_base"
+    output_dir = f"../exps/bs{args.batch_size}_{args.device}_trocr_base"
     results = {'batch_size': args.batch_size, 'device': args.device,
          'instance_mean_timing': sum(batch_timing)/len(test_dataset),
          'batch_mean_timing': sum(batch_timing)/len(batch_timing)
