@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import argparse
 import pandas as pd
@@ -9,7 +10,7 @@ from evaluate import load
 from torch.utils.data import DataLoader
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
-
+sys.path.insert(1, '/nfs/home/isaitov/NL_git/NL/')
 from src.dataload import IAMDataset
 
 
