@@ -102,12 +102,15 @@ if __name__ == '__main__':
         # predict using generate
         pixel_values = batch["pixel_values"].to(args.device)
         outputs = model.generate(pixel_values)
+        print(outputs, outputs.shape)
         # decode
         pred_str = processor.batch_decode(outputs, skip_special_tokens=True)
         labels = batch["labels"]
         labels[labels == -100] = processor.tokenizer.pad_token_id
+        print(labels, pred_str, labels.shape)
         label_str = processor.batch_decode(labels, skip_special_tokens=True)
         batch_timing.append(time()-start_time)
+        break
 
     output_dir = f"../exps/bs{args.batch_size}_{args.device}_trocr_base"
     results = {'batch_size': args.batch_size, 'device': args.device,
