@@ -117,5 +117,5 @@ if __name__ == '__main__':
          'instance_mean_timing': sum(batch_timing)/len(test_dataset),
          'batch_mean_timing': sum(batch_timing)/len(batch_timing)
     }
-    save_results(args, output_dir)
+    save_results(results, output_dir)
     print(f'Results saved in: {output_dir}')
