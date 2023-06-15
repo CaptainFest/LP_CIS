@@ -6,7 +6,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--data_folder', type=str,
-        default='/nfs/home/isaitov/NL/data/autoriaNumberplateDataset-2023-03-06/numberplate_config.yaml')
+        default='/nfs/home/isaitov/NL/data/autoriaNumberplateDataset-2023-03-06/npdata/numberplate_config.yaml')
     parser.add_argument('--batch', type=int, default=4)
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--aug', action=argparse.BooleanOptionalAction)
