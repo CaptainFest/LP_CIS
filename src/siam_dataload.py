@@ -5,7 +5,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.transforms import Resize, Compose, ToTensor, ToPILImage
 
-from src.ocr_folders import dict_ocr_folders
+from ocr_folders import dict_ocr_folders
 
 
 train_test_dict = {'train': '../data/train_all_OCR_df.csv', 'test': '../data/test_all_OCR_df.csv'}
@@ -30,6 +30,7 @@ def get_multilingual_OCR_dataset(train_test_dict, train:str='train'):
     except:
         print(f'File {train_test_dict[train][:-4]} not exists. Preparing data ...')
         data_all_OCR_df = prepare_multilingual_OCR_dataset(dict_ocr_folders, train=train)
+        data_all_OCR_df.to_csv(train_test_dict[train], index=False)
     return data_all_OCR_df
 
 
