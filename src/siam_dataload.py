@@ -90,3 +90,25 @@ class TripletDataset(Dataset):
             img2 = self.transform(img2)
             img3 = self.transform(img3)
         return (img1, img2, img3)
+
+
+class SingleDataset(Dataset):
+    def __init__(self, data_df, train, size=(112, 224)):
+        self.data_df = data_df
+        self.train = train
+        self.transform = Compose([Resize(size), ToTensor()])
+        if self.train:
+            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='train')
+        else:
+            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
+
+    def __len__(self):
+        return len(self.data_df)
+
+    def __getitem__(self, idx):
+        # get file name + text
+        img_path = os.path.join(*self.data_df.loc[idx, ['data_folder_path', 'filename']].values)
+        img = Image.open(img_path).convert('RGB')
+        img = self.transform(img)
+        label = self.data_df.loc[idx, 'reg_label']
+        return img, label
