@@ -31,6 +31,6 @@ def extract_embeddings(dataloader, model):
             if torch.cuda.is_available():
                 images = images.cuda()
             embeddings[k:k+len(images)] = model.get_embedding(images).data.cpu().numpy()
-            labels[k:k+len(images)] = target.numpy()
+            labels[k:k+len(images)] = target
             k += len(images)
     return embeddings, labels
