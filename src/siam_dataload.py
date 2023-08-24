@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, BatchSampler
 from torchvision.transforms import Resize, Compose, ToTensor, ToPILImage
 
 from ocr_folders import dict_ocr_folders
@@ -44,6 +44,10 @@ def get_negative_data(data, i):
     return os.path.join(ex['data_folder_path'].item(), ex['filename'].item())
 
 
+def class_2_indexes(data_df, classes) -> dict:
+    return {class_: data_df.loc[data_df['reg_label'] == class_].index.to_numpy() for class_ in classes}
+
+
 class TripletDataset(Dataset):
     def __init__(self, train_test_dict, train=True, aug=False, size=(112, 224), train_subsample=None):
         self.transform = Compose([Resize(size), ToTensor()])
@@ -56,6 +60,7 @@ class TripletDataset(Dataset):
         else:
             self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
             self.test_triplets = self.prepare_test_triplets()
+        self.data_df.reset_index()
         self.labels = np.unique(self.data_df['reg_label'])
 
     def __len__(self):
@@ -89,7 +94,7 @@ class TripletDataset(Dataset):
             img1 = self.transform(img1)
             img2 = self.transform(img2)
             img3 = self.transform(img3)
-        return (img1, img2, img3)
+        return img1, img2, img3
 
 
 class SingleDataset(Dataset):
@@ -112,3 +117,37 @@ class SingleDataset(Dataset):
         img = self.transform(img)
         label = self.data_df.loc[idx, 'reg_label']
         return img, label
+
+
+class BalancedBatchSampler(BatchSampler):
+    def __init__(self, labels, data_df, n_samples):
+        self.labels = labels
+        self.labels_set = list(set(self.labels.numpy()))
+        self.indexes_per_class = class_2_indexes(data_df, self.labels_set)
+        for l in self.labels_set:
+            np.random.shuffle(self.indexes_per_class[l])
+        self.used_label_indices_count = {label: 0 for label in self.labels_set}
+        self.count = 0
+        self.n_samples = n_samples
+        self.n_classes = len(self.labels_set)
+        self.n_dataset = len(self.labels)
+        self.batch_size = self.n_samples * self.n_classes
+
+    def __iter__(self):
+        self.count = 0
+        while self.count + self.batch_size < self.n_dataset:
+            classes = np.random.choice(self.labels_set, self.n_classes, replace=False)
+            indices = []
+            for class_ in classes:
+                indices.extend(self.indexes_per_class[class_][
+                               self.used_label_indices_count[class_]:self.used_label_indices_count[
+                                                                         class_] + self.n_samples])
+                self.used_label_indices_count[class_] += self.n_samples
+                if self.used_label_indices_count[class_] + self.n_samples > len(self.indexes_per_class[class_]):
+                    np.random.shuffle(self.indexes_per_class[class_])
+                    self.used_label_indices_count[class_] = 0
+            yield indices
+            self.count += self.n_classes * self.n_samples
+
+    def __len__(self):
+        return self.n_dataset // self.batch_size
