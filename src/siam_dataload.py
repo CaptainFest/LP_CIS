@@ -57,6 +57,9 @@ class TripletDataset(Dataset):
             self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='train')
             if train_subsample is not None:
                 self.data_df = self.data_df.sample(frac=train_subsample)
+                per_class_num = int(self.data_df * train_subsample)
+                self.data_df = pd.concat([self.data_df[self.data_df['reg_label']==cl].sample(n=per_class_num)
+                                          for cl in set(self.data_df['reg_label'])])
         else:
             self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
             self.test_triplets = self.prepare_test_triplets()
@@ -120,9 +123,9 @@ class SingleDataset(Dataset):
 
 
 class BalancedBatchSampler(BatchSampler):
-    def __init__(self, labels, data_df, n_samples):
-        self.labels = labels
-        self.labels_set = list(set(self.labels.numpy()))
+    def __init__(self, data_df, n_samples):
+        self.data_df = data_df
+        self.labels_set = list(set(self.data_df['reg_label']))
         self.indexes_per_class = class_2_indexes(data_df, self.labels_set)
         for l in self.labels_set:
             np.random.shuffle(self.indexes_per_class[l])
@@ -130,7 +133,7 @@ class BalancedBatchSampler(BatchSampler):
         self.count = 0
         self.n_samples = n_samples
         self.n_classes = len(self.labels_set)
-        self.n_dataset = len(self.labels)
+        self.n_dataset = len(self.data_df)
         self.batch_size = self.n_samples * self.n_classes
 
     def __iter__(self):
