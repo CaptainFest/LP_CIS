@@ -64,7 +64,7 @@ class TripletDataset(Dataset):
         else:
             self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
             self.test_triplets = self.prepare_test_triplets()
-        self.data_df.reset_index()
+        self.data_df.reset_index(drop=True, inplace=True)
         self.labels = np.unique(self.data_df['reg_label'])
 
     def __len__(self):
