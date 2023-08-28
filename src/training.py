@@ -1,11 +1,18 @@
+import os
+import sys
 import numpy as np
 from time import time
+from pathlib import Path
 
+import pandas as pd
 import torch
 
+sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
+from metrics import LossLog, AccLog
 
-def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
-        start_epoch=0):
+
+def fit_siam(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
+             save_path: str, batch_size, emb_size, start_epoch=0):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -15,94 +22,69 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     Siamese network: Siamese loader, siamese model, contrastive loss
     Online triplet learning: batch loader, embedding model, online triplet loss
     """
+
+    losses = LossLog()
+    accuracies = AccLog()
+
     for epoch in range(0, start_epoch):
         scheduler.step()
 
+    ep_log = []
     for epoch in range(start_epoch, n_epochs):
         scheduler.step()
 
         # Train stage
-        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics)
+        losses = train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, losses)
+        train_loss = losses.compute_average_loss('train')
+        # Val stage
+        losses = test_epoch(val_loader, model, loss_fn, device, losses)
+        val_loss = losses.compute_average_loss('test')
+        # Test stage
+        print(f"Epoch: {epoch + 1}/{n_epochs}. Train set: Average loss: {train_loss:.4f}")
+        print(f"Epoch: {epoch+1}/{n_epochs}. Validation set: Average loss: {val_loss:.4f}")
 
-        message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, n_epochs, train_loss)
-        for metric in metrics:
-            message += '\t{}: {}'.format(metric.name(), metric.value())
+        ep_log.append([epoch, train_loss, val_loss])
+        losses.reset()
 
-        val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
-        val_loss /= len(val_loader)
-
-        message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
-                                                                                 val_loss)
-        for metric in metrics:
-            message += '\t{}: {}'.format(metric.name(), metric.value())
-
-        print(message)
+    if save_path is not None:
+        torch.save(model.state_dict(), os.path.join(save_path,
+                                                    f"triplenet_ep{n_epochs}_bs{batch_size}_emb{emb_size}.pth"))
+        pd.DataFrame(data=ep_log, columns=['ep', 'train_loss', 'val_loss']).to_csv(os.path.join(save_path,'ep_log.csv'))
 
 
-def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
-    for metric in metrics:
-        metric.reset()
-
+def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, losses):
     model.train()
-    losses = []
-    total_loss = 0
     interval_time = time()
     for batch_idx, batch_data in enumerate(train_loader):
-
-        if not type(batch_data) in (tuple, list):
-            batch_data = (batch_data,)
-        if cuda:
+        if device == 'cuda':
             batch_data = tuple(d.cuda() for d in batch_data)
 
         optimizer.zero_grad()
         outputs = model(*batch_data)
 
-        if type(outputs) not in (tuple, list):
-            outputs = (outputs,)
-
-        loss_inputs = outputs
-
-        loss_outputs = loss_fn(*loss_inputs)
-        loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
-        losses.append(loss.item())
-        total_loss += loss.item()
-        loss.backward()
+        loss_outputs = loss_fn(*outputs)
+        losses.update(loss_outputs.item(), 'train')
+        loss_outputs.backward()
         optimizer.step()
 
         if batch_idx % log_interval == 0:
             message = 'Train: [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time {} sec'.format(
                 batch_idx * len(batch_data[0]), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), np.mean(losses), time() - interval_time)
-
+                100. * batch_idx / len(train_loader), losses.compute_average_loss('train'), time() - interval_time)
             print(message)
-            losses = []
             interval_time = time()
 
-    total_loss /= (batch_idx + 1)
-    return total_loss, metrics
+    return losses
 
 
-def test_epoch(val_loader, model, loss_fn, cuda, metrics):
+def test_epoch(val_loader, model, loss_fn, device, losses):
     with torch.no_grad():
-        for metric in metrics:
-            metric.reset()
+        losses.reset()
         model.eval()
-        val_loss = 0
         for batch_idx, batch_data in enumerate(val_loader):
-
-            if not type(batch_data) in (tuple, list):
-                batch_data = (batch_data,)
-            if cuda:
+            if device == 'cuda':
                 batch_data = tuple(d.cuda() for d in batch_data)
-
             outputs = model(*batch_data)
-
-            if type(outputs) not in (tuple, list):
-                outputs = (outputs,)
-            loss_inputs = outputs
-
-            loss_outputs = loss_fn(*loss_inputs)
-            loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
-            val_loss += loss.item()
-
-    return val_loss, metrics
+            loss_outputs = loss_fn(*outputs)
+            losses.update(loss_outputs.item(), 'test')
+    return losses

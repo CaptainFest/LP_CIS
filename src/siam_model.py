@@ -14,7 +14,7 @@ class EmbedNetwork(nn.Module):
 
     """
 
-    def __init__(self):
+    def __init__(self, last_feat_num:int=2):
         super(EmbedNetwork, self).__init__()
         # get resnet model
         self.resnet = models.resnet18(weights=None)
@@ -28,10 +28,11 @@ class EmbedNetwork(nn.Module):
         self.resnet = nn.Sequential(*(list(self.resnet.children())[:-1]))
 
         # add linear layers
+        self.last_feat_num = last_feat_num
         self.fc = nn.Sequential(
             nn.Linear(self.fc_in_features, 256),
             nn.ReLU(inplace=True),
-            nn.Linear(256, 2),
+            nn.Linear(256, self.last_feat_num),
         )
 
         # initialize the weights
@@ -52,10 +53,10 @@ class EmbedNetwork(nn.Module):
 
 class TripletNetwork(nn.Module):
 
-    def __init__(self):
+    def __init__(self, last_feat_num: int):
         super(TripletNetwork, self).__init__()
         # get resnet model
-        self.embedding_net = EmbedNetwork()
+        self.embedding_net = EmbedNetwork(last_feat_num)
 
     def get_embedding(self, x):
         output = self.embedding_net(x)
@@ -67,3 +68,23 @@ class TripletNetwork(nn.Module):
         output3 = self.get_embedding(input3)
 
         return output1, output2, output3
+
+
+
+
+class ClassificationNet(nn.Module):
+    def __init__(self, embedding_net, emb_size: int, n_classes: int):
+        super(ClassificationNet, self).__init__()
+        self.embedding_net = embedding_net
+        self.n_classes = n_classes
+        self.nonlinear = nn.PReLU()
+        self.fc1 = nn.Linear(emb_size, n_classes)
+
+    def forward(self, x):
+        output = self.embedding_net(x)
+        output = self.nonlinear(output)
+        scores = nn.functional.log_softmax(self.fc1(output), dim=-1)
+        return scores
+
+    def get_embedding(self, x):
+        return self.nonlinear(self.embedding_net(x))
