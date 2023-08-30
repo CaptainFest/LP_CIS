@@ -46,7 +46,7 @@ def fit_siam(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_e
         losses.reset()
 
     if save_path is not None:
-        os.makedirs(save_path, exist_ok=True)
+        os.makedirs(os.path.join(save_path, exp_name), exist_ok=True)
         torch.save(model.state_dict(), os.path.join(save_path,
                                                     exp_name,
                                                     f"triplenet_ep{n_epochs}_bs{batch_size}_emb{emb_size}.pth"))
