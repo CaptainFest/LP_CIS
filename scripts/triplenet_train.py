@@ -43,8 +43,8 @@ if __name__ == "__main__":
     if args.balanced_sampling:
         train_batch_sampler = BalancedBatchSampler(train_dataset.data_df, n_samples=args.n_samples)
         test_batch_sampler = BalancedBatchSampler(test_dataset.data_df, n_samples=args.n_samples)
-        train_loader = DataLoader(train_dataset, batch_sampler=train_batch_sampler, shuffle=True, **kwargs)
-        test_loader = DataLoader(test_dataset, batch_sampler=test_batch_sampler, shuffle=False, **kwargs)
+        train_loader = DataLoader(train_dataset, batch_sampler=train_batch_sampler, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_sampler=test_batch_sampler, shuffle=False)
     else:
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
         test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
