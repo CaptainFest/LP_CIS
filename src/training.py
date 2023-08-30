@@ -12,7 +12,7 @@ from metrics import LossLog, AccLog
 
 
 def fit_siam(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
-             save_path: str, batch_size, emb_size, start_epoch=0):
+             save_path: str, exp_name:str, batch_size, emb_size, start_epoch=0):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -46,7 +46,9 @@ def fit_siam(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_e
         losses.reset()
 
     if save_path is not None:
+        os.makedirs(save_path, exist_ok=True)
         torch.save(model.state_dict(), os.path.join(save_path,
+                                                    exp_name,
                                                     f"triplenet_ep{n_epochs}_bs{batch_size}_emb{emb_size}.pth"))
         pd.DataFrame(data=ep_log, columns=['ep', 'train_loss', 'val_loss']).to_csv(os.path.join(save_path,'ep_log.csv'))
 

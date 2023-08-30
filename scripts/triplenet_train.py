@@ -61,4 +61,4 @@ if __name__ == "__main__":
 
     model = fit_siam(train_loader, test_loader, model, triplet_loss, optimizer,
                      scheduler, args.epochs, device, log_interval, args.save_folder,
-                     args.batch_size, args.emb_size)
+                     args.exp_name, args.batch_size, args.emb_size)
