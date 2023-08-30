@@ -11,49 +11,7 @@ sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 from metrics import LossLog, AccLog
 
 
-def fit_siam(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
-             save_path: str, exp_name:str, batch_size, emb_size, start_epoch=0):
-    """
-    Loaders, model, loss function and metrics should work together for a given task,
-    i.e. The model should be able to process data output of loaders,
-    loss function should process target output of loaders and outputs from the model
-
-    Examples: Classification: batch loader, classification model, NLL loss, accuracy metric
-    Siamese network: Siamese loader, siamese model, contrastive loss
-    Online triplet learning: batch loader, embedding model, online triplet loss
-    """
-
-    losses = LossLog()
-
-    for epoch in range(0, start_epoch):
-        scheduler.step()
-
-    ep_log = []
-    for epoch in range(start_epoch, n_epochs):
-        scheduler.step()
-
-        # Train stage
-        losses = train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, losses)
-        train_loss = losses.compute_average_loss('train')
-        # Val stage
-        losses = test_epoch(val_loader, model, loss_fn, device, losses)
-        val_loss = losses.compute_average_loss('test')
-        # Test stage
-        print(f"Epoch: {epoch + 1}/{n_epochs}. Train set: Average loss: {train_loss:.4f}")
-        print(f"Epoch: {epoch+1}/{n_epochs}. Validation set: Average loss: {val_loss:.4f}")
-
-        ep_log.append([epoch, train_loss, val_loss])
-        losses.reset()
-
-    if save_path is not None:
-        os.makedirs(os.path.join(save_path, exp_name), exist_ok=True)
-        torch.save(model.state_dict(), os.path.join(save_path,
-                                                    exp_name,
-                                                    f"triplenet_ep{n_epochs}_bs{batch_size}_emb{emb_size}.pth"))
-        pd.DataFrame(data=ep_log, columns=['ep', 'train_loss', 'val_loss']).to_csv(os.path.join(save_path,'ep_log.csv'))
-
-
-def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, losses):
+def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, losses, accuracies):
     model.train()
     interval_time = time()
     for batch_idx, batch_data in enumerate(train_loader):
@@ -78,11 +36,13 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, l
     return losses
 
 
-def test_epoch(val_loader, model, loss_fn, device, losses):
+def test_epoch(val_loader, model, loss_fn, device, losses, mode, accuracies):
     with torch.no_grad():
         losses.reset()
         model.eval()
         for batch_idx, batch_data in enumerate(val_loader):
+            if mode == 'clf':
+                batch_data, batch_label = batch_data
             if device == 'cuda':
                 batch_data = tuple(d.cuda() for d in batch_data)
             outputs = model(*batch_data)
@@ -90,8 +50,9 @@ def test_epoch(val_loader, model, loss_fn, device, losses):
             losses.update_loss(loss_outputs.item(), 'test')
     return losses
 
-def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
-        save_path: str, exp_name:str, batch_size, emb_size, mode:str='siam', start_epoch=0):
+
+def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
+        save_path: str, exp_name: str, batch_size, emb_size, start_epoch=0):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,

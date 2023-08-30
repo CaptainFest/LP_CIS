@@ -1,3 +1,6 @@
+from torchmetrics.classification import MulticlassAccuracy
+
+
 class LossLog:
     def __init__(self):
         self.losses = {'train': [], 'test': []}
@@ -13,14 +16,16 @@ class LossLog:
 
 
 class AccLog:
-    def __init__(self):
-        self.accuracies = {'train': [], 'test': []}
+    def __init__(self, classes: int = 9):
+        self.accuracies = {'train': MulticlassAccuracy(classes, average='macro'),
+                           'test': MulticlassAccuracy(classes, average='macro')}
 
-    def update_acc(self, new_acc, train):
-        self.accuracies[train].append(new_acc)
+    def update_acc(self, preds, target, train):
+        self.accuracies[train].update(preds, target)
 
     def compute_average_acc(self, train):
-        return sum(self.accuracies[train]) / len(self.accuracies[train])
+        return self.accuracies[train].compute()
 
     def reset(self):
-        self.accuracies = {'train': [], 'test': []}
+        self.accuracies['train'].reset()
+        self.accuracies['test'].reset()
