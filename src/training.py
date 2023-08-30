@@ -24,7 +24,6 @@ def fit_siam(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_e
     """
 
     losses = LossLog()
-    accuracies = AccLog()
 
     for epoch in range(0, start_epoch):
         scheduler.step()
@@ -63,7 +62,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, l
         outputs = model(*batch_data)
 
         loss_outputs = loss_fn(*outputs)
-        losses.update(loss_outputs.item(), 'train')
+        losses.update_loss(loss_outputs.item(), 'train')
         loss_outputs.backward()
         optimizer.step()
 
@@ -86,5 +85,5 @@ def test_epoch(val_loader, model, loss_fn, device, losses):
                 batch_data = tuple(d.cuda() for d in batch_data)
             outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
-            losses.update(loss_outputs.item(), 'test')
+            losses.update_loss(loss_outputs.item(), 'test')
     return losses
