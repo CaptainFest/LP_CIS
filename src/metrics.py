@@ -3,7 +3,7 @@ class LossLog:
         self.losses = {'train': [], 'test': []}
 
     def update_loss(self, new_loss, train):
-        self.losses[train].extend(new_loss)
+        self.losses[train].append(new_loss)
 
     def compute_average_loss(self, train):
         return sum(self.losses[train]) / len(self.losses[train])
@@ -17,7 +17,7 @@ class AccLog:
         self.accuracies = {'train': [], 'test': []}
 
     def update_acc(self, new_acc, train):
-        self.accuracies[train].extend(new_acc)
+        self.accuracies[train].append(new_acc)
 
     def compute_average_acc(self, train):
         return sum(self.accuracies[train]) / len(self.accuracies[train])
