@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 
 sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 
-from training import fit_siam
+from training import fit
 from siam_model import TripletNetwork
 from siam_dataload import TripletDataset, SingleDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler
 
@@ -58,6 +58,6 @@ if __name__ == "__main__":
     scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
     log_interval = 100
 
-    model = fit_siam(train_loader, test_loader, model, triplet_loss, optimizer,
-                     scheduler, args.epochs, device, log_interval, args.save_folder,
-                     args.exp_name, args.batch_size, args.emb_size)
+    model = fit('siam', train_loader, test_loader, model, triplet_loss, optimizer,
+                scheduler, args.epochs, device, log_interval, args.save_folder,
+                args.exp_name, args.batch_size, args.emb_size)

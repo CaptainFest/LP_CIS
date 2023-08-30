@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 
 sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 
-from training import fit_clf
+from training import fit
 from siam_model import TripletNetwork, ClassificationNet
 from siam_dataload import TripletDataset, SingleDataset, prepare_multilingual_OCR_dataset
 
@@ -51,5 +51,5 @@ if __name__ == "__main__":
     clf_loss = nn.CrossEntropyLoss()
     clf_optimizer = Adam(class_model.parameters(), lr=args.lr)
     clf_scheduler = lr_scheduler.StepLR(clf_optimizer, 8, gamma=0.1, last_epoch=-1)
-    fit_clf(train_clf_loader, test_clf_loader, class_model, clf_loss, clf_optimizer,
-            clf_scheduler, args.epochs, device, args.save_folder, args.batch_size, args.emb_size)
+    fit('clf', train_clf_loader, test_clf_loader, class_model, clf_loss, clf_optimizer,
+        clf_scheduler, args.epochs, device, args.save_folder, args.batch_size, args.emb_size)
