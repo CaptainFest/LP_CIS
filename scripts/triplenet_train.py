@@ -11,14 +11,15 @@ from torch.utils.data import Dataset, DataLoader
 sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 
 from training import fit_siam
-from siam_model import TripletNetwork, ClassificationNet
+from siam_model import TripletNetwork
 from siam_dataload import TripletDataset, SingleDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--exp_name', type=str, default='from_args')
-    parser.add_argument('--aug', action=argparse.BooleanOptionalAction)
+    parser.add_argument('--balanced_sampling', action=argparse.BooleanOptionalAction)
+    parser.add_argument('--n_samples', type=int, default=4)
     parser.add_argument('--emb_size', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=1)
@@ -33,16 +34,23 @@ if __name__ == "__main__":
 
     args = parse_args()
 
-    train_test_dict = {}
+    train_test_dict = {'train': '../data/train_all_OCR_df.csv', 'test': '../data/test_all_OCR_df.csv'}
 
     train_dataset = TripletDataset(train_test_dict, train=True, train_subsample=args.train_subsample)
     test_dataset = TripletDataset(train_test_dict, train=False)
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
+    train_batch_sampler, test_batch_sampler = None, None
+    if args.balanced_sampling:
+        train_batch_sampler = BalancedBatchSampler(train_dataset.data_df, n_samples=args.n_samples)
+        test_batch_sampler = BalancedBatchSampler(test_dataset.data_df, n_samples=args.n_samples)
 
-    model = TripletNetwork(last_feat_num=2)
+    kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size,
+                              batch_sampler=train_batch_sampler, shuffle=True, **kwargs)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
+                             batch_sampler=test_batch_sampler, shuffle=False, **kwargs)
+
+    model = TripletNetwork(last_feat_num=args.emb_size)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device)
 
@@ -54,12 +62,3 @@ if __name__ == "__main__":
     model = fit_siam(train_loader, test_loader, model, triplet_loss, optimizer,
                      scheduler, args.epochs, device, log_interval, args.save_folder,
                      args.batch_size, args.emb_size)
-
-    train_clf_dataset = SingleDataset(train_test_dict, train=True, train_subsample=args.train_subsample)
-    test_clf_dataset = SingleDataset(train_test_dict, train=False)
-    train_clf_loader = DataLoader(train_clf_dataset, batch_size=args.batch_size*3, shuffle=True, **kwargs)
-    test_clf_loader = DataLoader(test_clf_dataset, batch_size=args.batch_size*3, shuffle=False, **kwargs)
-
-    class_model = ClassificationNet(model, args.emb_size, 9)
-
-

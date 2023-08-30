@@ -8,8 +8,6 @@ from torchvision.transforms import Resize, Compose, ToTensor, ToPILImage
 from ocr_folders import dict_ocr_folders
 
 
-train_test_dict = {'train': '../data/train_all_OCR_df.csv', 'test': '../data/test_all_OCR_df.csv'}
-
 
 def prepare_multilingual_OCR_dataset(data_folders:dict, train:str) -> pd.DataFrame:
     data_arr = np.array([[],[],[],[]])
@@ -102,8 +100,7 @@ class TripletDataset(Dataset):
 
 
 class SingleDataset(Dataset):
-    def __init__(self, data_df, train, train_subsample=None,  size=(112, 224)):
-        self.data_df = data_df
+    def __init__(self, train_test_dict, train, train_subsample=None,  size=(112, 224)):
         self.train = train
         self.transform = Compose([Resize(size), ToTensor()])
         if self.train:
