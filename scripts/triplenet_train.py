@@ -39,16 +39,17 @@ if __name__ == "__main__":
     train_dataset = TripletDataset(train_test_dict, train=True, train_subsample=args.train_subsample)
     test_dataset = TripletDataset(train_test_dict, train=False)
 
-    train_batch_sampler, test_batch_sampler = None, None
+    kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
     if args.balanced_sampling:
         train_batch_sampler = BalancedBatchSampler(train_dataset.data_df, n_samples=args.n_samples)
         test_batch_sampler = BalancedBatchSampler(test_dataset.data_df, n_samples=args.n_samples)
-        args.batch_size = None
-    kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size,
-                              batch_sampler=train_batch_sampler, shuffle=True, **kwargs)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
-                             batch_sampler=test_batch_sampler, shuffle=False, **kwargs)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size,
+                                  batch_sampler=train_batch_sampler, shuffle=True, **kwargs)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size,
+                                 batch_sampler=test_batch_sampler, shuffle=False, **kwargs)
+    else:
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
 
     model = TripletNetwork(last_feat_num=args.emb_size)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
