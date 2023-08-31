@@ -20,16 +20,17 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
         if device == 'cuda':
             batch_data = batch_data.to(device)
         optimizer.zero_grad()
-        print(batch_data.shape)
-        break
+
         if mode == 'clf':
             outputs = model(batch_data)
             batch_label = batch_label.to(device)
             accuracies.update_acc(outputs, batch_label, 'train')
             loss_outputs = loss_fn(outputs, batch_label)
+            bs = batch_data[0]
         elif mode == 'siam':
             outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
+            bs = len(batch_data[0])
         else:
             raise ValueError
 
@@ -39,7 +40,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
 
         if batch_idx % log_interval == 0:
             message = 'Train: [{}/{} ({:.0f}%)]\tLoss: {:.6f}, time {} sec'.format(
-                batch_idx * len(batch_data[0]), len(train_loader.dataset),
+                batch_idx * bs, len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), losses.compute_average_loss('train'), time() - interval_time)
             print(message)
             interval_time = time()
