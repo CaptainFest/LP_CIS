@@ -19,12 +19,11 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             batch_data, batch_label = batch_data
         if device == 'cuda':
             batch_data = batch_data.to(device)
-
         optimizer.zero_grad()
         if mode == 'clf':
             outputs = model(batch_data)
             batch_label = batch_label.to(device)
-            accuracies.update_acc(outputs, batch_label, 'test')
+            accuracies.update_acc(outputs, batch_label, 'train')
             loss_outputs = loss_fn(outputs, batch_label)
         elif mode == 'siam':
             outputs = model(*batch_data)
