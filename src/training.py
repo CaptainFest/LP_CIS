@@ -11,10 +11,12 @@ sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 from metrics import LossLog, AccLog
 
 
-def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, losses, accuracies):
+def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, mode, losses, accuracies):
     model.train()
     interval_time = time()
     for batch_idx, batch_data in enumerate(train_loader):
+        if mode == 'clf':
+            batch_data, batch_label = batch_data
         if device == 'cuda':
             batch_data = tuple(d.cuda() for d in batch_data)
 
@@ -36,7 +38,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, l
     return losses, accuracies
 
 
-def test_epoch(val_loader, model, loss_fn, device, losses, mode, accuracies):
+def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
     with torch.no_grad():
         losses.reset()
         model.eval()
@@ -75,9 +77,9 @@ def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, schedule
 
         # Train stage
         losses, accuracies = train_epoch(train_loader, model, loss_fn, optimizer,
-                                         device, log_interval, losses, accuracies)
+                                         device, log_interval, mode, losses, accuracies)
         # Test stage
-        losses, accuracies = test_epoch(val_loader, model, loss_fn, device, losses, accuracies)
+        losses, accuracies = test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies)
         train_loss = losses.compute_average_loss('train')
         test_loss = losses.compute_average_loss('test')
         temp_log = [epoch, train_loss, test_loss]
@@ -110,4 +112,4 @@ def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, schedule
         else:
             raise ValueError
         torch.save(model.state_dict(), os.path.join(save_path, exp_name, model_name))
-        pd.DataFrame(data=ep_log, columns=columns).to_csv(os.path.join(save_path,'ep_log.csv'))
+        pd.DataFrame(data=ep_log, columns=columns).to_csv(os.path.join(save_path, 'ep_log.csv'))
