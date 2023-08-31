@@ -20,6 +20,8 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
         if device == 'cuda':
             batch_data = batch_data.to(device)
         optimizer.zero_grad()
+        print(batch_data.shape)
+        break
         if mode == 'clf':
             outputs = model(batch_data)
             batch_label = batch_label.to(device)
