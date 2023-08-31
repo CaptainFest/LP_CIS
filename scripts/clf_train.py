@@ -51,5 +51,7 @@ if __name__ == "__main__":
     clf_loss = nn.CrossEntropyLoss()
     clf_optimizer = Adam(class_model.parameters(), lr=args.lr)
     clf_scheduler = lr_scheduler.StepLR(clf_optimizer, 8, gamma=0.1, last_epoch=-1)
+    log_interval = 100
     fit('clf', train_clf_loader, test_clf_loader, class_model, clf_loss, clf_optimizer,
-        clf_scheduler, args.epochs, device, args.save_folder, args.batch_size, args.emb_size)
+        clf_scheduler, args.epochs, device, log_interval, args.save_folder,
+        args.exp_name, args.batch_size, args.emb_size)
