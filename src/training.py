@@ -79,7 +79,7 @@ def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, schedule
     """
 
     losses = LossLog()
-    accuracies = AccLog()
+    accuracies = AccLog(device=device)
 
     for epoch in range(0, start_epoch):
         scheduler.step()

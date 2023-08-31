@@ -16,9 +16,9 @@ class LossLog:
 
 
 class AccLog:
-    def __init__(self, classes: int = 9):
-        self.accuracies = {'train': MulticlassAccuracy(classes, average='macro'),
-                           'test': MulticlassAccuracy(classes, average='macro')}
+    def __init__(self, classes: int = 9, device: str = 'cuda'):
+        self.accuracies = {'train': MulticlassAccuracy(classes, average='macro').to(device),
+                           'test': MulticlassAccuracy(classes, average='macro').to(device)}
 
     def update_acc(self, preds, target, train):
         print(preds.get_device(), target.get_device())
