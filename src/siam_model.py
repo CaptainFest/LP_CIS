@@ -81,7 +81,7 @@ class ClassificationNet(nn.Module):
         self.fc1 = nn.Linear(emb_size, n_classes)
 
     def forward(self, x):
-        output = self.embedding_net(x)
+        output = self.embedding_net.get_embedding(x)
         output = self.nonlinear(output)
         scores = nn.functional.log_softmax(self.fc1(output), dim=-1)
         return scores
