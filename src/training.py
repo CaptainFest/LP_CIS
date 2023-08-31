@@ -40,7 +40,6 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
 
 def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
     with torch.no_grad():
-        losses.reset()
         model.eval()
         for batch_idx, batch_data in enumerate(val_loader):
             if mode == 'clf':
