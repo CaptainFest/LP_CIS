@@ -26,7 +26,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             batch_label = batch_label.to(device)
             accuracies.update_acc(outputs, batch_label, 'train')
             loss_outputs = loss_fn(outputs, batch_label)
-            bs = batch_data[0]
+            bs = batch_data.shape[0]
         elif mode == 'siam':
             outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
