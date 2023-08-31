@@ -33,7 +33,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, l
             print(message)
             interval_time = time()
 
-    return losses
+    return losses, accuracies
 
 
 def test_epoch(val_loader, model, loss_fn, device, losses, mode, accuracies):
@@ -48,7 +48,7 @@ def test_epoch(val_loader, model, loss_fn, device, losses, mode, accuracies):
             outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
             losses.update_loss(loss_outputs.item(), 'test')
-    return losses
+    return losses, accuracies
 
 
 def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
