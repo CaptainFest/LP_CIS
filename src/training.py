@@ -21,10 +21,14 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             batch_data = batch_data.to(device)
 
         optimizer.zero_grad()
-        outputs = model(*batch_data)
         if mode == 'clf':
+            outputs = model(batch_data)
             batch_label = batch_label.to(device)
-            accuracies.update_acc(outputs, batch_label, 'train')
+            accuracies.update_acc(outputs, batch_label, 'test')
+        elif mode == 'siam':
+            outputs = model(*batch_data)
+        else:
+            raise ValueError
 
         loss_outputs = loss_fn(*outputs)
         losses.update_loss(loss_outputs.item(), 'train')
@@ -49,10 +53,14 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
                 batch_data, batch_label = batch_data
             if device == 'cuda':
                 batch_data = batch_data.to(device)
-            outputs = model(*batch_data)
             if mode == 'clf':
+                outputs = model(batch_data)
                 batch_label = batch_label.to(device)
                 accuracies.update_acc(outputs, batch_label, 'test')
+            elif mode == 'siam':
+                outputs = model(*batch_data)
+            else:
+                raise ValueError
             loss_outputs = loss_fn(*outputs)
             losses.update_loss(loss_outputs.item(), 'test')
     return losses, accuracies
