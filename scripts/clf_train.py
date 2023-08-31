@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--emb_size', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=1)
-    parser.add_argument('--train_subsample', type=int, default=None)
+    parser.add_argument('--train_subsample', type=float, default=None)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--triplet_model_path', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
