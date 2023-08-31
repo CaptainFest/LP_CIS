@@ -25,7 +25,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             outputs = model(batch_data)
             batch_label = batch_label.to(device)
             accuracies.update_acc(outputs, batch_label, 'test')
-            loss_outputs = loss_fn(outputs)
+            loss_outputs = loss_fn(outputs, batch_label)
         elif mode == 'siam':
             outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
@@ -58,7 +58,7 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
                 outputs = model(batch_data)
                 batch_label = batch_label.to(device)
                 accuracies.update_acc(outputs, batch_label, 'test')
-                loss_outputs = loss_fn(outputs)
+                loss_outputs = loss_fn(outputs, batch_label)
             elif mode == 'siam':
                 outputs = model(*batch_data)
                 loss_outputs = loss_fn(*outputs)
