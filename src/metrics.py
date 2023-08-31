@@ -21,7 +21,6 @@ class AccLog:
                            'test': MulticlassAccuracy(classes, average='macro').to(device)}
 
     def update_acc(self, preds, target, train):
-        print(preds.get_device(), target.get_device())
         self.accuracies[train].update(preds, target)
 
     def compute_average_acc(self, train):
