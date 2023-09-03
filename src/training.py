@@ -53,14 +53,13 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
         for batch_idx, batch_data in enumerate(val_loader):
             if mode == 'clf':
                 batch_data, batch_label = batch_data
-            if device == 'cuda':
                 batch_data = batch_data.to(device)
-            if mode == 'clf':
                 outputs = model(batch_data)
                 batch_label = batch_label.to(device)
                 accuracies.update_acc(outputs, batch_label, 'test')
                 loss_outputs = loss_fn(outputs, batch_label)
             elif mode == 'siam':
+                batch_data = tuple(d.to(device) for d in batch_data)
                 outputs = model(*batch_data)
                 loss_outputs = loss_fn(*outputs)
             else:
