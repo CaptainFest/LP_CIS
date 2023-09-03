@@ -15,19 +15,18 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
     model.train()
     interval_time = time()
     for batch_idx, batch_data in enumerate(train_loader):
-        if mode == 'clf':
-            batch_data, batch_label = batch_data
-        if device == 'cuda':
-            batch_data = batch_data.to(device)
         optimizer.zero_grad()
 
         if mode == 'clf':
+            batch_data, batch_label = batch_data
+            batch_data = batch_data.to(device)
             outputs = model(batch_data)
             batch_label = batch_label.to(device)
             accuracies.update_acc(outputs, batch_label, 'train')
             loss_outputs = loss_fn(outputs, batch_label)
             bs = batch_data.shape[0]
         elif mode == 'siam':
+            batch_data = tuple(d.to(device) for d in batch_data)
             outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
             bs = len(batch_data[0])
