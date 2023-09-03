@@ -56,8 +56,9 @@ class TripletDataset(Dataset):
             if train_subsample is not None:
                 self.data_df = self.data_df.sample(frac=train_subsample)
                 per_class_num = int(len(self.data_df) * train_subsample)
-                self.data_df = pd.concat([self.data_df[self.data_df['reg_label']==cl].sample(n=per_class_num,
-                                                                                             replace=True)
+                self.data_df = pd.concat([self.data_df[self.data_df['reg_label'] == cl].sample(n=per_class_num)
+                                          if (self.data_df[self.data_df['reg_label'] == cl].shape[0] > per_class_num)
+                                          else (self.data_df[self.data_df['reg_label'] == cl])
                                           for cl in set(self.data_df['reg_label'])])
         else:
             self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
