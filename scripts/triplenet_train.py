@@ -51,7 +51,7 @@ if __name__ == "__main__":
         test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
 
     model = TripletNetwork(last_feat_num=args.emb_size)
-    if args.device is not None:
+    if args.device is None:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
     else:
         device = args.device
