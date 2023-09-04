@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument('--train_subsample', type=float, default=None)
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
+    parser.add_argument('--device', type=str, default=None)
     args = parser.parse_args()
     return args
 
@@ -50,7 +51,10 @@ if __name__ == "__main__":
         test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
 
     model = TripletNetwork(last_feat_num=args.emb_size)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if args.device is not None:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        device = args.device
     model.to(device)
 
     optimizer = Adam(model.parameters(), lr=args.lr)

@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--triplet_model_path', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
+    parser.add_argument('--device', type=str, default=None)
     args = parser.parse_args()
     return args
 
@@ -40,7 +41,10 @@ if __name__ == "__main__":
     train_clf_loader = DataLoader(train_clf_dataset, batch_size=args.batch_size * 3, shuffle=True)
     test_clf_loader = DataLoader(test_clf_dataset, batch_size=args.batch_size * 3, shuffle=False)
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if args.device is not None:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        device = args.device
 
     triplet_model = TripletNetwork(args.emb_size)
     triplet_model.load_state_dict(torch.load(args.triplet_model_path))
