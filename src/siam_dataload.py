@@ -47,7 +47,7 @@ def class_2_indexes(data_df, classes) -> dict:
 
 
 class TripletDataset(Dataset):
-    def __init__(self, train_test_dict, train=True, aug=False, size=(112, 224), train_subsample=None):
+    def __init__(self, train_test_dict, train=True, aug=False, size=(112, 224), train_subsample=None, random_state=None):
         self.transform = Compose([Resize(size), ToTensor()])
         self.aug = aug
         self.train = train
@@ -56,7 +56,8 @@ class TripletDataset(Dataset):
             if train_subsample is not None:
                 self.data_df = self.data_df.sample(frac=train_subsample)
                 per_class_num = int(len(self.data_df) * train_subsample)
-                self.data_df = pd.concat([self.data_df[self.data_df['reg_label'] == cl].sample(n=per_class_num)
+                self.data_df = pd.concat([self.data_df[self.data_df['reg_label'] == cl].sample(n=per_class_num,
+                                                                                               random_state=random_state)
                                           if (self.data_df[self.data_df['reg_label'] == cl].shape[0] > per_class_num)
                                           else (self.data_df[self.data_df['reg_label'] == cl])
                                           for cl in set(self.data_df['reg_label'])])
@@ -101,7 +102,7 @@ class TripletDataset(Dataset):
 
 
 class SingleDataset(Dataset):
-    def __init__(self, train_test_dict, train, train_subsample=None,  size=(112, 224)):
+    def __init__(self, train_test_dict, train, train_subsample=None,  size=(112, 224), random_state=None):
         self.train = train
         self.transform = Compose([Resize(size), ToTensor()])
         if self.train:
@@ -109,7 +110,8 @@ class SingleDataset(Dataset):
             if train_subsample is not None:
                 self.data_df = self.data_df.sample(frac=train_subsample)
                 per_class_num = int(len(self.data_df) * train_subsample)
-                self.data_df = pd.concat([self.data_df[self.data_df['reg_label'] == cl].sample(n=per_class_num)
+                self.data_df = pd.concat([self.data_df[self.data_df['reg_label'] == cl].sample(n=per_class_num,
+                                                                                               random_state=random_state)
                                           if (self.data_df[self.data_df['reg_label'] == cl].shape[0] > per_class_num)
                                           else (self.data_df[self.data_df['reg_label'] == cl])
                                           for cl in set(self.data_df['reg_label'])])

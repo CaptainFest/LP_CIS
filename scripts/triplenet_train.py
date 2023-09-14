@@ -12,7 +12,7 @@ sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 
 from training import fit
 from siam_model import TripletNetwork
-from siam_dataload import TripletDataset, SingleDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler
+from siam_dataload import TripletDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--device', type=str, default=None)
+    parser.add_argument('--seed', type=int, default=None)
     args = parser.parse_args()
     return args
 
@@ -37,7 +38,8 @@ if __name__ == "__main__":
 
     train_test_dict = {'train': '../data/train_all_OCR_df.csv', 'test': '../data/test_all_OCR_df.csv'}
 
-    train_dataset = TripletDataset(train_test_dict, train=True, train_subsample=args.train_subsample)
+    train_dataset = TripletDataset(train_test_dict, train=True,
+                                   train_subsample=args.train_subsample, random_state=args.seed)
     test_dataset = TripletDataset(train_test_dict, train=False)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}

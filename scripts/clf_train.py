@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument('--triplet_model_path', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--device', type=str, default=None)
+    parser.add_argument('--seed', type=int, default=None)
     args = parser.parse_args()
     return args
 
@@ -36,7 +37,8 @@ if __name__ == "__main__":
 
     train_test_dict = {'train': '../data/train_all_OCR_df.csv', 'test': '../data/test_all_OCR_df.csv'}
 
-    train_clf_dataset = SingleDataset(train_test_dict, train=True, train_subsample=args.train_subsample)
+    train_clf_dataset = SingleDataset(train_test_dict, train=True, train_subsample=args.train_subsample,
+                                      random_state=args.seed)
     test_clf_dataset = SingleDataset(train_test_dict, train=False)
     train_clf_loader = DataLoader(train_clf_dataset, batch_size=args.batch_size * 3, shuffle=True)
     test_clf_loader = DataLoader(test_clf_dataset, batch_size=args.batch_size * 3, shuffle=False)
