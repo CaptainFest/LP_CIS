@@ -7,8 +7,7 @@ LP detection and recognition models developed for CIS countries.
 License plate detection
 ```
 # prepare data for YOLO model
-from scripts/convert_to_yolo import convert_dataset_to_yolo_format
-convert_dataset_to_yolo_format(path_to_images, path_to_json)
+python src/yolo/yolo_prep.py --data_folder {path_to_dataset} 
 
 # train model
 python scripts/yolo_train.py --data_folder {path_to_dataset_in_yolo_format} 
