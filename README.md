@@ -14,7 +14,7 @@ convert_dataset_to_yolo_format(path_to_images, path_to_json)
 python scripts/yolo_train.py --data_folder {path_to_dataset_in_yolo_format} 
 ```
 
-License plate Optical character recognition
+License plate Optical Character Recognition
 ```
 python scripts/troct_finetune.py --ocr_folder {path_to_OCR_dataset} 
 ```
