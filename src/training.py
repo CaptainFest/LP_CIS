@@ -28,6 +28,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
         elif mode == 'siam':
             batch_data = tuple(d.to(device) for d in batch_data)
             outputs = model(*batch_data)
+            print(outputs.shape)
             loss_outputs = loss_fn(*outputs)
             bs = len(batch_data[0])
         else:
