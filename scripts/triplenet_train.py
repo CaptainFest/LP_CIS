@@ -11,8 +11,11 @@ from torch.utils.data import Dataset, DataLoader
 sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 
 from training import fit
+from losses import OnlineTripletLoss
 from siam_model import TripletNetwork
-from siam_dataload import TripletDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler
+from siam_dataload import TripletDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler, \
+                          RandomNegativeTripletSelector, HardestNegativeTripletSelector, \
+                          SemihardNegativeTripletSelector
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -28,6 +31,8 @@ def parse_args():
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None)
+    parser.add_argument('--online', type=str, default=None)
+    parser.add_argument('--margin', type=float, default=1.)
     args = parser.parse_args()
     return args
 
@@ -60,7 +65,19 @@ if __name__ == "__main__":
     model.to(device)
 
     optimizer = Adam(model.parameters(), lr=args.lr)
-    triplet_loss = nn.TripletMarginLoss()
+
+    if args.online is not None:
+        margin = args.margin
+        if args.online == 'random_negative':
+            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+        elif args.online == 'hardest_negative':
+            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+        elif args.online == 'semihard_negative':
+            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+        else:
+            raise ValueError
+    else:
+        triplet_loss = nn.TripletMarginLoss()
     scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
     log_interval = 100
 

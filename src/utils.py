@@ -34,3 +34,9 @@ def extract_embeddings(dataloader, model):
             labels[k:k+len(images)] = target
             k += len(images)
     return embeddings, labels
+
+
+def pdist(vectors):
+    distance_matrix = -2 * vectors.mm(torch.t(vectors)) + vectors.pow(2).sum(dim=1).view(1, -1) + vectors.pow(2).sum(
+        dim=1).view(-1, 1)
+    return distance_matrix

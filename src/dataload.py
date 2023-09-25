@@ -1,4 +1,7 @@
+import os
+import json
 import numpy as np
+import pandas as pd
 from PIL import Image, ImageFilter, ImageOps
 
 import torch
@@ -12,19 +15,21 @@ class Dilation(torch.nn.Module):
 
     def __init__(self, kernel=3):
         super().__init__()
-        self.kernel=kernel
+        self.kernel = kernel
 
     def forward(self, img):
         return img.filter(ImageFilter.MaxFilter(self.kernel))
+
 
 class Erosion(torch.nn.Module):
 
     def __init__(self, kernel=3):
         super().__init__()
-        self.kernel=kernel
+        self.kernel = kernel
 
     def forward(self, img):
         return img.filter(ImageFilter.MinFilter(self.kernel))
+
 
 class Underline(torch.nn.Module):
 
@@ -47,6 +52,7 @@ class Underline(torch.nn.Module):
                 except:
                     continue
         return img
+
 
 class KeepOriginal(torch.nn.Module):
     def __init__(self):
@@ -110,7 +116,7 @@ class IAMDataset(Dataset):
         return encoding
 
 
-def get_names_and_np(folder:str):
+def get_names_and_np(folder: str):
     data = []
     for fn in os.listdir(os.path.join(folder, 'img')):
         with open(os.path.join(folder, 'ann', f"{fn.rsplit('.', 1)[0]}.json"), 'r') as f:
@@ -119,7 +125,7 @@ def get_names_and_np(folder:str):
     return data
     
 
-def get_df_from_folder(train_folder:str, val_folder:str, test_folder:str, columns=['file_name', 'text']):
+def get_df_from_folder(train_folder: str, val_folder: str, test_folder: str, columns=['file_name', 'text']):
     train_data, val_data, test_data = get_names_and_np(train_folder), \
                                       get_names_and_np(val_folder),   \
                                       get_names_and_np(test_folder)
