@@ -11,7 +11,7 @@ sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 from metrics import LossLog, AccLog
 
 
-def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, mode, losses, accuracies):
+def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, mode, losses, accuracies, online):
     model.train()
     interval_time = time()
     for batch_idx, batch_data in enumerate(train_loader):
@@ -26,9 +26,12 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             loss_outputs = loss_fn(outputs, batch_label)
             bs = batch_data.shape[0]
         elif mode == 'siam':
+            if online:
+                batch_data, batch_label = batch_data
             batch_data = tuple(d.to(device) for d in batch_data)
             outputs = model(*batch_data)
-            print(outputs.shape)
+            if online:
+                outputs += batch_label
             loss_outputs = loss_fn(*outputs)
             bs = len(batch_data[0])
         else:
