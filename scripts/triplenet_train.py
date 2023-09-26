@@ -13,8 +13,8 @@ sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 from training import fit
 from losses import OnlineTripletLoss
 from siam_model import TripletNetwork
-from siam_dataload import TripletDataset, prepare_multilingual_OCR_dataset, BalancedBatchSampler, \
-                          RandomNegativeTripletSelector, HardestNegativeTripletSelector, \
+from siam_dataload import SingleDataset, TripletDataset, prepare_multilingual_OCR_dataset, \
+                          BalancedBatchSampler, RandomNegativeTripletSelector, HardestNegativeTripletSelector, \
                           SemihardNegativeTripletSelector
 
 def parse_args():
@@ -43,9 +43,14 @@ if __name__ == "__main__":
 
     train_test_dict = {'train': '../data/train_all_OCR_df.csv', 'test': '../data/test_all_OCR_df.csv'}
 
-    train_dataset = TripletDataset(train_test_dict, train=True,
-                                   train_subsample=args.train_subsample, random_state=args.seed)
-    test_dataset = TripletDataset(train_test_dict, train=False)
+    if args.online is not None:
+        train_dataset = SingleDataset(train_test_dict, train=True, train_subsample=args.train_subsample,
+                                      random_state=args.seed)
+        test_dataset = SingleDataset(train_test_dict, train=False)
+    else:
+        train_dataset = TripletDataset(train_test_dict, train=True, train_subsample=args.train_subsample,
+                                       random_state=args.seed)
+        test_dataset = TripletDataset(train_test_dict, train=False)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
     if args.balanced_sampling:
