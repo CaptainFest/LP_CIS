@@ -26,11 +26,11 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             loss_outputs = loss_fn(outputs, batch_label)
             bs = batch_data.shape[0]
         elif mode == 'siam':
-            if online:
+            if online is not None:
                 batch_data, batch_label = batch_data
             batch_data = tuple(d.to(device) for d in batch_data)
             outputs = model(*batch_data)
-            if online:
+            if online is not None:
                 outputs += batch_label
             loss_outputs = loss_fn(*outputs)
             bs = len(batch_data[0])
@@ -51,7 +51,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
     return losses, accuracies
 
 
-def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
+def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies, online):
     with torch.no_grad():
         model.eval()
         for batch_idx, batch_data in enumerate(val_loader):
@@ -63,8 +63,12 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
                 accuracies.update_acc(outputs, batch_label, 'test')
                 loss_outputs = loss_fn(outputs, batch_label)
             elif mode == 'siam':
+                if online is not None:
+                    batch_data, batch_label = batch_data
                 batch_data = tuple(d.to(device) for d in batch_data)
                 outputs = model(*batch_data)
+                if online is not None:
+                    outputs += batch_label
                 loss_outputs = loss_fn(*outputs)
             else:
                 raise ValueError
@@ -73,7 +77,7 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies):
 
 
 def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, device, log_interval,
-        save_path: str, exp_name: str, batch_size, emb_size, start_epoch=0):
+        save_path: str, exp_name: str, batch_size, emb_size, online, start_epoch=0):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -96,9 +100,9 @@ def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, schedule
 
         # Train stage
         losses, accuracies = train_epoch(train_loader, model, loss_fn, optimizer,
-                                         device, log_interval, mode, losses, accuracies)
+                                         device, log_interval, mode, losses, accuracies, online)
         # Test stage
-        losses, accuracies = test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies)
+        losses, accuracies = test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies, online)
         train_loss = losses.compute_average_loss('train')
         test_loss = losses.compute_average_loss('test')
         temp_log = [epoch, train_loss, test_loss]
