@@ -65,10 +65,12 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies, onl
             elif mode == 'siam':
                 if online is not None:
                     batch_data, batch_label = batch_data
-                batch_data = tuple(d.to(device) for d in batch_data)
-                outputs = model(*batch_data)
-                if online is not None:
-                    outputs += batch_label
+                    batch_data = batch_data.to(device)
+                    outputs = model.get_embedding(batch_data)
+                    outputs = tuple(outputs, batch_label)
+                else:
+                    batch_data = tuple(d.to(device) for d in batch_data)
+                    outputs = model(*batch_data)
                 loss_outputs = loss_fn(*outputs)
             else:
                 raise ValueError
