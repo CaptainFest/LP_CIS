@@ -28,10 +28,12 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
         elif mode == 'siam':
             if online is not None:
                 batch_data, batch_label = batch_data
-            batch_data = tuple(d.to(device) for d in batch_data)
-            outputs = model(*batch_data)
-            if online is not None:
-                outputs += batch_label
+                batch_data = batch_data.to(device)
+                outputs = model.get_embedding(batch_data)
+                outputs = tuple(outputs, batch_label)
+            else:
+                batch_data = tuple(d.to(device) for d in batch_data)
+                outputs = model(*batch_data)
             loss_outputs = loss_fn(*outputs)
             bs = len(batch_data[0])
         else:
