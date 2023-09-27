@@ -30,7 +30,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
                 batch_data, batch_label = batch_data
                 batch_data = batch_data.to(device)
                 outputs = model.get_embedding(batch_data)
-                outputs = tuple(outputs, batch_label)
+                outputs = tuple([outputs, batch_label])
             else:
                 batch_data = tuple(d.to(device) for d in batch_data)
                 outputs = model(*batch_data)
@@ -69,7 +69,7 @@ def test_epoch(val_loader, model, loss_fn, device, mode, losses, accuracies, onl
                     batch_data, batch_label = batch_data
                     batch_data = batch_data.to(device)
                     outputs = model.get_embedding(batch_data)
-                    outputs = tuple(outputs, batch_label)
+                    outputs = tuple([outputs, batch_label])
                 else:
                     batch_data = tuple(d.to(device) for d in batch_data)
                     outputs = model(*batch_data)
