@@ -43,7 +43,7 @@ if __name__ == "__main__":
     train_clf_loader = DataLoader(train_clf_dataset, batch_size=args.batch_size * 3, shuffle=True)
     test_clf_loader = DataLoader(test_clf_dataset, batch_size=args.batch_size * 3, shuffle=False)
 
-    if args.device is not None:
+    if args.device is None:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
     else:
         device = args.device
