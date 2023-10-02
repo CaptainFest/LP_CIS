@@ -79,7 +79,7 @@ if __name__ == "__main__":
     else:
         triplet_loss = nn.TripletMarginLoss()
 
-    model = LitTriplet(last_feat_num=args.emb_size, loss_fn=triplet_loss, max_epochs=args.epochs)
+    model = LitTriplet(last_feat_num=args.emb_size, loss_fn=triplet_loss)
 
     log_interval = 100
 
