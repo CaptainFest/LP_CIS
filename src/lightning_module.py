@@ -41,10 +41,11 @@ class EmbedNetwork(nn.Module):
 
 
 class LitTriplet(l.LightningModule):
-    def __init__(self, last_feat_num: int, loss_fn):
+    def __init__(self, last_feat_num: int, loss_fn, online):
         super().__init__()
         # get resnet model
         self.embedding_net = EmbedNetwork(last_feat_num)
+        self.online = online
         self.loss_fn = loss_fn
 
     def get_embedding(self, x):
@@ -66,9 +67,14 @@ class LitTriplet(l.LightningModule):
         loss = self._shared_eval(batch_data, mode='valid')
 
     def _shared_eval(self, batch, mode="train"):
-        batch_data, batch_labels = batch
-        outputs = self.embedding_net(batch_data)
-        loss = self.loss_fn(outputs, batch_labels)
+        if self.online is not None:
+            batch_data, batch_labels = batch
+            outputs = self.get_embedding(batch_data)
+            outputs = tuple([outputs, batch_labels])
+        else:
+            outputs = self.embedding_net(*batch)
+        loss = self.loss_fn(outputs)
+
         self.log_dict({f"{mode}_loss": loss, "progress_bar": {"loss": loss}})
         return loss
 

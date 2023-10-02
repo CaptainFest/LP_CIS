@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     log_interval = 100
 
-    trainer = pl.Trainer(max_epochs=args.epochs)
+    trainer = pl.Trainer(max_epochs=args.epochs, online=args.online)
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=test_loader)
 
     #model = fit('siam', train_loader, test_loader, model, triplet_loss, optimizer,
