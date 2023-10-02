@@ -42,7 +42,7 @@ class EmbedNetwork(nn.Module):
 
 class LitTriplet(l.LightningModule):
     def __init__(self, last_feat_num: int, loss_fn):
-        super().__init__(self)
+        super().__init__()
         # get resnet model
         self.embedding_net = EmbedNetwork(last_feat_num)
         self.loss_fn = loss_fn
@@ -59,20 +59,18 @@ class LitTriplet(l.LightningModule):
         return output1, output2, output3
 
     def training_step(self, batch_data, batch_idx):
-        # training_step defines the train loop. It is independent of forward
-        batch_data, batch_label = batch_data
-        outputs = self.embedding_net(batch_data)
-        loss = self.loss_fn(outputs, batch_label)
-        self.log("train_loss", loss)
+        loss = self._shared_eval(batch_data, mode='train')
         return loss
 
     def validation_step(self, batch_data, batch_idx):
-        # training_step defines the train loop. It is independent of forward
-        batch_data, batch_label = batch_data
+        loss = self._shared_eval(batch_data, mode='valid')
+
+    def _shared_eval(self, batch, mode="train"):
+        batch_data, batch_labels = batch
         outputs = self.embedding_net(batch_data)
-        loss = self.loss_fn(outputs, batch_label)
-        self.log("train_loss", loss)
-        return
+        loss = self.loss_fn(outputs, batch_labels)
+        self.log_dict({f"{mode}_loss": loss, "progress_bar": {"loss": loss}})
+        return loss
 
     def on_train_epoch_end(self):
         print(self.log)
@@ -97,7 +95,7 @@ class LitTriplet(l.LightningModule):
 
 class LitClf(nn.Module):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
-        super().__init__(self)
+        super().__init__()
         self.embedding_net = embedding_net
         self.n_classes = n_classes
         self.nonlinear = nn.PReLU()
@@ -115,7 +113,7 @@ class LitClf(nn.Module):
     def get_embedding(self, x):
         return self.nonlinear(self.embedding_net(x))
 
-    def _calculate_loss(self, batch, mode="train"):
+    def _shared_eval(self, batch, mode="train"):
         batch_data, batch_labels = batch
         outputs = self.embedding_net(batch_data)
         loss = nn.CrossEntropyLoss(outputs, batch_labels)
@@ -127,12 +125,12 @@ class LitClf(nn.Module):
         return loss, accuracy
 
     def training_step(self, batch_data, batch_idx):
-        loss, accuracy = self._calculate_loss(batch_data, mode='train')
+        loss, accuracy = self._shared_eval(batch_data, mode='train')
         self.log_dict({"train_loss": loss, "accuracy": accuracy, "progress_bar": {"accuracy": accuracy}})
         return loss
 
     def validation_step(self, batch_data, batch_idx):
-        loss, accuracy = self._calculate_loss(batch_data, mode='train')
+        loss, accuracy = self._shared_eval(batch_data, mode='train')
         self.log_dict({"train_loss": loss, "accuracy": accuracy, "progress_bar": {"accuracy": accuracy}})
 
     def on_train_epoch_end(self):
