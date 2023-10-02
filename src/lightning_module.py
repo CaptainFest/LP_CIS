@@ -72,6 +72,7 @@ class LitTriplet(l.LightningModule):
             outputs = self.get_embedding(batch_data)
             outputs = tuple([outputs, batch_labels])
         else:
+            print(batch)
             outputs = self.embedding_net(*batch)
         loss = self.loss_fn(outputs)
 
