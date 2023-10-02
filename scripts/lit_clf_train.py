@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     model = LitClf(triplet_model, args.emb_size, 9)
 
-    trainer = pl.Trainer()
+    trainer = pl.Trainer(c)
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=test_loader)
 
     #log_interval = 100
