@@ -81,11 +81,11 @@ class LitTriplet(l.LightningModule):
 
     def on_train_epoch_end(self):
         print(self.log)
-        self.training_batch_preds.clear()
+        # self.training_batch_preds.clear()
 
     def on_validation_epoch_end(self):
         print(self.log)
-        self.validation_batch_preds.clear()
+        # self.validation_batch_preds.clear()
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-2)
