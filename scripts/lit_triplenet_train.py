@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler, Adam
 from torch.utils.data import Dataset, DataLoader
-import lightning as l
+
 import lightning.pytorch as pl
+from lightning.pytorch import loggers as pl_loggers
 
 sys.path.insert(1, str(Path(__file__).parent.parent / "src"))
 
@@ -81,9 +82,9 @@ if __name__ == "__main__":
 
     model = LitTriplet(last_feat_num=args.emb_size, loss_fn=triplet_loss, online=args.online)
 
-    log_interval = 100
+    comet_logger = pl_loggers.CometLogger(save_dir="logs/")
 
-    trainer = pl.Trainer(max_epochs=args.epochs)
+    trainer = pl.Trainer(max_epochs=args.epochs, logger=comet_logger)
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=test_loader)
 
     #model = fit('siam', train_loader, test_loader, model, triplet_loss, optimizer,
