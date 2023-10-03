@@ -76,15 +76,17 @@ class LitTriplet(l.LightningModule):
             outputs = self.forward(batch[0], batch[1], batch[2])
         loss = self.loss_fn(*outputs)
 
-        self.log(f"{mode}_loss", loss)
+        self.log(f"{mode}_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def on_train_epoch_end(self):
-        print(self.log)
+        pass
+        # print(self.log)
         # self.training_batch_preds.clear()
 
     def on_validation_epoch_end(self):
-        print(self.log)
+        pass
+        # print(self.log)
         # self.validation_batch_preds.clear()
 
     def configure_optimizers(self):
