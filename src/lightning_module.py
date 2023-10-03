@@ -74,6 +74,7 @@ class LitTriplet(l.LightningModule):
         else:
             # sprint(type(batch), len(batch), batch[0].shape)
             outputs = self.forward(batch[0], batch[1], batch[2])
+            print(len(outputs), outputs[0].shape)
         loss = self.loss_fn(outputs)
 
         self.log_dict({f"{mode}_loss": loss, "progress_bar": {"loss": loss}})
