@@ -76,7 +76,7 @@ class LitTriplet(l.LightningModule):
             outputs = self.forward(batch[0], batch[1], batch[2])
         loss = self.loss_fn(*outputs)
 
-        self.log_dict({f"{mode}_loss": loss, "progress_bar": {"loss": loss}})
+        self.log(f"{mode}_loss", loss)
         return loss
 
     def on_train_epoch_end(self):
