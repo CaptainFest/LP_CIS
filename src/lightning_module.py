@@ -72,8 +72,8 @@ class LitTriplet(l.LightningModule):
             outputs = self.get_embedding(batch_data)
             outputs = tuple([outputs, batch_labels])
         else:
-            print(type(batch), len(batch), batch[0].shape)
-            outputs = self.embedding_net(*batch)
+            # sprint(type(batch), len(batch), batch[0].shape)
+            outputs = self.embedding_net(batch)
         loss = self.loss_fn(outputs)
 
         self.log_dict({f"{mode}_loss": loss, "progress_bar": {"loss": loss}})
