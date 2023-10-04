@@ -82,7 +82,12 @@ if __name__ == "__main__":
 
     model = LitTriplet(last_feat_num=args.emb_size, loss_fn=triplet_loss, online=args.online)
 
-    comet_logger = pl_loggers.CometLogger(save_dir="logs/")
+    comet_logger = pl_loggers.CometLogger(
+        api_key=os.environ.get("COMET_API_KEY"),
+        project_name="region-recognition",
+        workspace="captainfest",
+        save_dir="logs/"
+    )
 
     trainer = pl.Trainer(max_epochs=args.epochs, logger=comet_logger)
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=test_loader)

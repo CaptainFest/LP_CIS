@@ -48,6 +48,9 @@ class LitTriplet(l.LightningModule):
         self.online = online
         self.loss_fn = loss_fn
 
+        # temporary variables
+        self.output_losses = {'trian':[], 'valid': []}
+
     def get_embedding(self, x):
         output = self.embedding_net(x)
         return output
@@ -75,12 +78,16 @@ class LitTriplet(l.LightningModule):
             # sprint(type(batch), len(batch), batch[0].shape)
             outputs = self.forward(batch[0], batch[1], batch[2])
         loss = self.loss_fn(*outputs)
-
-        self.log(f"{mode}_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        # self.output_losses[mode].append(loss)
+        self.log(f"{mode}_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def on_train_epoch_end(self):
         pass
+        #avg_loss =
+        #self.logger.experiment.add_scalar("Loss/Train",
+        #                                  avg_loss,
+        #                                 self.current_epoch)
         # print(self.log)
         # self.training_batch_preds.clear()
 
