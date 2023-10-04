@@ -86,6 +86,7 @@ if __name__ == "__main__":
         api_key=os.environ.get("COMET_API_KEY"),
         project_name="region-recognition",
         workspace="captainfest",
+        experiment_name=args.exp_name,
         save_dir="logs/"
     )
 
