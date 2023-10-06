@@ -76,9 +76,9 @@ if __name__ == "__main__":
         if args.online == 'random_negative':
             triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
         elif args.online == 'hardest_negative':
-            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+            triplet_loss = OnlineTripletLoss(margin, HardestNegativeTripletSelector(margin))
         elif args.online == 'semihard_negative':
-            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+            triplet_loss = OnlineTripletLoss(margin, SemihardNegativeTripletSelector(margin))
         else:
             raise ValueError
     else:

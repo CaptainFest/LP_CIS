@@ -1,4 +1,6 @@
 import os
+import random
+
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -198,11 +200,12 @@ class FunctionNegativeTripletSelector:
     and return a negative index for that pair
     """
 
-    def __init__(self, margin, negative_selection_fn, cpu=True):
+    def __init__(self, margin, negative_selection_fn, cpu=True, combined=False):
         super(FunctionNegativeTripletSelector, self).__init__()
         self.cpu = cpu
         self.margin = margin
         self.negative_selection_fn = negative_selection_fn
+        self.combined = combined
 
     def get_triplets(self, embeddings, labels):
         if self.cpu:
@@ -227,7 +230,11 @@ class FunctionNegativeTripletSelector:
                 loss_values = ap_distance - distance_matrix[torch.LongTensor(np.array([anchor_positive[0]])),
                                                             torch.LongTensor(negative_indices)] + self.margin
                 loss_values = loss_values.data.cpu().numpy()
-                hard_negative = self.negative_selection_fn(loss_values)
+                if not self.combined:
+                    hard_negative = self.negative_selection_fn(loss_values)
+                else:
+                    index = random.randint(0, 2)
+                    hard_negative = self.negative_selection_fn[index](loss_values)
                 if hard_negative is not None:
                     hard_negative = negative_indices[hard_negative]
                     triplets.append([anchor_positive[0], anchor_positive[1], hard_negative])
@@ -256,3 +263,12 @@ def SemihardNegativeTripletSelector(margin, cpu=False):
     return FunctionNegativeTripletSelector(margin=margin,
                                            negative_selection_fn=lambda x: semihard_negative(x, margin),
                                            cpu=cpu)
+
+def CombinedNegativeTripletSelector(margin, cpu=False):
+    return FunctionNegativeTripletSelector(margin=margin,
+                                           negative_selection_fn=[
+                                               hardest_negative,
+                                               random_hard_negative,
+                                               lambda x: semihard_negative(x, margin)],
+                                           cpu=cpu,
+                                           combined=True)

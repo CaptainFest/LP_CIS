@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 from pathlib import Path
+import comet_ml
 
 import torch
 import torch.nn as nn
@@ -18,7 +19,7 @@ from losses import OnlineTripletLoss
 from siam_model import TripletNetwork
 from siam_dataload import SingleDataset, TripletDataset, prepare_multilingual_OCR_dataset, \
                           BalancedBatchSampler, RandomNegativeTripletSelector, HardestNegativeTripletSelector, \
-                          SemihardNegativeTripletSelector
+                          SemihardNegativeTripletSelector, CombinedNegativeTripletSelector
 from lightning_module import LitTriplet
 
 
@@ -36,11 +37,18 @@ def parse_args():
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None)
-    parser.add_argument('--online', type=str, default=None)
+    parser.add_argument('--online', type=str, choices=['random_negative', 'hardest_negative',
+                                                       'semihard_negative', 'combined_negative'],  default=None)
     parser.add_argument('--margin', type=float, default=1.)
     parser.add_argument('--system', type=str, choices=['windows', 'linux'], default='linux')
+    parser.add_argument('--logs_path', type=str, default="../exps/light_logs/")
     args = parser.parse_args()
     return args
+
+
+def save_hps2logger(logger, args):
+    logger.log_hyperparams(vars(args))
+
 
 
 if __name__ == "__main__":
@@ -73,9 +81,11 @@ if __name__ == "__main__":
         if args.online == 'random_negative':
             triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
         elif args.online == 'hardest_negative':
-            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+            triplet_loss = OnlineTripletLoss(margin, HardestNegativeTripletSelector(margin))
         elif args.online == 'semihard_negative':
-            triplet_loss = OnlineTripletLoss(margin, RandomNegativeTripletSelector(margin))
+            triplet_loss = OnlineTripletLoss(margin, SemihardNegativeTripletSelector(margin))
+        elif args.online == 'combined_negative':
+            triplet_loss = OnlineTripletLoss(margin, CombinedNegativeTripletSelector(margin))
         else:
             raise ValueError
     else:
@@ -84,13 +94,14 @@ if __name__ == "__main__":
     model = LitTriplet(last_feat_num=args.emb_size, loss_fn=triplet_loss, online=args.online)
 
     comet_logger = pl_loggers.CometLogger(
-        api_key=os.environ.get("COMET_API_KEY"),
+        api_key='fdnVusaeA1HEamDdLRAIQH6xW',
         project_name="region-recognition",
         workspace="captainfest",
         experiment_name=args.exp_name,
-        save_dir="logs/"
+        save_dir=args.logs_path
     )
 
+    save_hps2logger(comet_logger, args)
     trainer = pl.Trainer(max_epochs=args.epochs, logger=comet_logger)
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=test_loader)
 

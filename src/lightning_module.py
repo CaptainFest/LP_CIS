@@ -1,3 +1,4 @@
+import os
 import torch
 import lightning as l
 import torch.nn as nn
@@ -83,18 +84,27 @@ class LitTriplet(l.LightningModule):
         return loss
 
     def on_train_epoch_end(self):
-        pass
-        #avg_loss =
-        #self.logger.experiment.add_scalar("Loss/Train",
-        #                                  avg_loss,
-        #                                 self.current_epoch)
-        # print(self.log)
-        # self.training_batch_preds.clear()
+        self.save_model()
 
     def on_validation_epoch_end(self):
         pass
+        # avg_loss =
+        # self.logger.experiment.add_scalar("Loss/Train",
+        #                                  avg_loss,
+        #                                 self.current_epoch)
         # print(self.log)
         # self.validation_batch_preds.clear()
+
+    def save_model(self):
+        save_path = os.path.join(self.logger.save_dir, 'weights')
+        os.makedirs(save_path, exist_ok=True)
+        model_name = f'model_ep{self.current_epoch}'
+        model_fp = os.path.join(save_path, model_name)
+        torch.save({
+            'epoch': self.current_epoch,
+            'model_state_dict': self.embedding_net.state_dict(),
+        }, model_fp)
+        self.logger.experiment.log_model(model_name, model_fp)
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-2)
