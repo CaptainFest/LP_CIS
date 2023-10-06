@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import Dataset, BatchSampler
 from torchvision.transforms import Resize, Compose, ToTensor, ToPILImage
 
-from ocr_folders import dict_ocr_folders
+from ocr_folders import dict_ocr_folders, dict_win_ocr_folders
 
 
 from utils import pdist
@@ -28,12 +28,13 @@ def prepare_multilingual_OCR_dataset(data_folders: dict, train: str) -> pd.DataF
     return dataset_df
 
 
-def get_multilingual_OCR_dataset(train_test_dict, train: str='train'):
+def get_multilingual_OCR_dataset(train_test_dict, train: str = 'train', system: str = 'linux'):
     try:
         data_all_OCR_df = pd.read_csv(train_test_dict[train])
     except:
         print(f'File {train_test_dict[train][:-4]} not exists. Preparing data ...')
-        data_all_OCR_df = prepare_multilingual_OCR_dataset(dict_ocr_folders, train=train)
+        dict_ocr = dict_ocr_folders if system == 'linux' else dict_win_ocr_folders
+        data_all_OCR_df = prepare_multilingual_OCR_dataset(dict_ocr, train=train)
         data_all_OCR_df.to_csv(train_test_dict[train], index=False)
     return data_all_OCR_df
 
@@ -53,12 +54,13 @@ def class_2_indexes(data_df, classes) -> dict:
 
 
 class TripletDataset(Dataset):
-    def __init__(self, train_test_dict, train=True, aug=False, size=(112, 224), train_subsample=None, random_state=None):
+    def __init__(self, train_test_dict, train=True, aug=False, size=(112, 224),
+                 train_subsample=None, random_state=None, system: str = 'linux'):
         self.transform = Compose([Resize(size), ToTensor()])
         self.aug = aug
         self.train = train
         if self.train:
-            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='train')
+            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='train', system=system)
             if train_subsample is not None:
                 self.data_df = self.data_df.sample(frac=train_subsample)
                 per_class_num = int(len(self.data_df) * train_subsample)
@@ -68,7 +70,7 @@ class TripletDataset(Dataset):
                                           else (self.data_df[self.data_df['reg_label'] == cl])
                                           for cl in set(self.data_df['reg_label'])])
         else:
-            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
+            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test', system=system)
             self.test_triplets = self.prepare_test_triplets()
         self.data_df.reset_index(drop=True, inplace=True)
         self.labels = np.unique(self.data_df['reg_label'])
@@ -108,11 +110,12 @@ class TripletDataset(Dataset):
 
 
 class SingleDataset(Dataset):
-    def __init__(self, train_test_dict, train, train_subsample=None,  size=(112, 224), random_state=None):
+    def __init__(self, train_test_dict, train, train_subsample=None,  size=(112, 224), random_state=None,
+                 system: str = 'linux'):
         self.train = train
         self.transform = Compose([Resize(size), ToTensor()])
         if self.train:
-            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='train')
+            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='train', system=system)
             if train_subsample is not None:
                 self.data_df = self.data_df.sample(frac=train_subsample)
                 per_class_num = int(len(self.data_df) * train_subsample)
@@ -122,7 +125,7 @@ class SingleDataset(Dataset):
                                           else (self.data_df[self.data_df['reg_label'] == cl])
                                           for cl in set(self.data_df['reg_label'])])
         else:
-            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test')
+            self.data_df = get_multilingual_OCR_dataset(train_test_dict, train='test', system=system)
         self.data_df.reset_index(drop=True, inplace=True)
         self.labels = np.unique(self.data_df['reg_label'])
 
@@ -221,7 +224,8 @@ class FunctionNegativeTripletSelector:
 
             ap_distances = distance_matrix[anchor_positives[:, 0], anchor_positives[:, 1]]
             for anchor_positive, ap_distance in zip(anchor_positives, ap_distances):
-                loss_values = ap_distance - distance_matrix[torch.LongTensor(np.array([anchor_positive[0]])), torch.LongTensor(negative_indices)] + self.margin
+                loss_values = ap_distance - distance_matrix[torch.LongTensor(np.array([anchor_positive[0]])),
+                                                            torch.LongTensor(negative_indices)] + self.margin
                 loss_values = loss_values.data.cpu().numpy()
                 hard_negative = self.negative_selection_fn(loss_values)
                 if hard_negative is not None:
