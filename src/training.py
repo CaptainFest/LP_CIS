@@ -128,16 +128,16 @@ def fit(mode: str, train_loader, val_loader, model, loss_fn, optimizer, schedule
         ep_log.append(temp_log)
         losses.reset()
 
-    if save_path is not None:
-        os.makedirs(os.path.join(save_path, exp_name), exist_ok=True)
-        if mode == 'siam':
-            columns = ['ep', 'train_loss', 'val_loss']
-            model_name = f"triplenet_ep{n_epochs}_bs{batch_size}_emb{emb_size}.pth"
-        elif mode == 'clf':
-            columns = ['ep', 'train_loss', 'val_loss', 'train_acc', 'val_acc']
-            model_name = f"clfnet_ep{n_epochs}_bs{batch_size}_emb{emb_size}.pth"
-        else:
-            raise ValueError
-        torch.save(model.state_dict(), os.path.join(save_path, exp_name, model_name))
-        pd.DataFrame(data=ep_log, columns=columns).to_csv(os.path.join(save_path, exp_name, 'ep_log.csv'),
-                                                          index=False)
+        if save_path is not None:
+            os.makedirs(os.path.join(save_path, exp_name), exist_ok=True)
+            if mode == 'siam':
+                columns = ['ep', 'train_loss', 'val_loss']
+                model_name = f"triplenet_ep{epoch}.pth"
+            elif mode == 'clf':
+                columns = ['ep', 'train_loss', 'val_loss', 'train_acc', 'val_acc']
+                model_name = f"clfnet_ep{epoch}.pth"
+            else:
+                raise ValueError
+            torch.save(model.state_dict(), os.path.join(save_path, exp_name, model_name))
+            pd.DataFrame(data=ep_log, columns=columns).to_csv(os.path.join(save_path, exp_name, 'ep_log.csv'),
+                                                              index=False)
