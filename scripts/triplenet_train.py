@@ -15,7 +15,7 @@ from losses import OnlineTripletLoss
 from siam_model import TripletNetwork
 from siam_dataload import SingleDataset, TripletDataset, prepare_multilingual_OCR_dataset, \
                           BalancedBatchSampler, RandomNegativeTripletSelector, HardestNegativeTripletSelector, \
-                          SemihardNegativeTripletSelector
+                          SemihardNegativeTripletSelector, CombinedNegativeTripletSelector
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -31,7 +31,8 @@ def parse_args():
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None)
-    parser.add_argument('--online', type=str, default=None)
+    parser.add_argument('--online', type=str, choices=['random_negative', 'hardest_negative',
+                                                       'semihard_negative', 'combined_negative'], default=None)
     parser.add_argument('--margin', type=float, default=1.)
     args = parser.parse_args()
     return args
@@ -79,10 +80,13 @@ if __name__ == "__main__":
             triplet_loss = OnlineTripletLoss(margin, HardestNegativeTripletSelector(margin))
         elif args.online == 'semihard_negative':
             triplet_loss = OnlineTripletLoss(margin, SemihardNegativeTripletSelector(margin))
+        elif args.online == 'combined_negative':
+            triplet_loss = OnlineTripletLoss(margin, CombinedNegativeTripletSelector(margin))
         else:
             raise ValueError
     else:
         triplet_loss = nn.TripletMarginLoss()
+
     scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
     log_interval = 100
 
