@@ -38,6 +38,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--online', type=str, default=None)
     parser.add_argument('--margin', type=float, default=1.)
+    parser.add_argument('--system', type=str, choices=['windows', 'linux'], default='linux')
     args = parser.parse_args()
     return args
 
@@ -50,12 +51,12 @@ if __name__ == "__main__":
 
     if args.online is not None:
         train_dataset = SingleDataset(train_test_dict, train=True, train_subsample=args.train_subsample,
-                                      random_state=args.seed)
-        test_dataset = SingleDataset(train_test_dict, train=False)
+                                      random_state=args.seed, system=args.system)
+        test_dataset = SingleDataset(train_test_dict, train=False, system=args.system)
     else:
         train_dataset = TripletDataset(train_test_dict, train=True, train_subsample=args.train_subsample,
-                                       random_state=args.seed)
-        test_dataset = TripletDataset(train_test_dict, train=False)
+                                       random_state=args.seed, system=args.system)
+        test_dataset = TripletDataset(train_test_dict, train=False, system=args.system)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
     if args.balanced_sampling:
