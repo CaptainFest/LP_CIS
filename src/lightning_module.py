@@ -98,7 +98,7 @@ class LitTriplet(l.LightningModule):
     def save_model(self):
         save_path = os.path.join(self.logger.save_dir, 'weights')
         os.makedirs(save_path, exist_ok=True)
-        model_name = f'model_ep{self.current_epoch}'
+        model_name = f'model_ep{self.current_epoch}.pt'
         model_fp = os.path.join(save_path, model_name)
         torch.save({
             'epoch': self.current_epoch,
