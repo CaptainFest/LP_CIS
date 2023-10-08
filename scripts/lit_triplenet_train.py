@@ -19,7 +19,8 @@ from losses import OnlineTripletLoss
 from siam_model import TripletNetwork
 from siam_dataload import SingleDataset, TripletDataset, prepare_multilingual_OCR_dataset, \
                           BalancedBatchSampler, RandomNegativeTripletSelector, HardestNegativeTripletSelector, \
-                          SemihardNegativeTripletSelector, CombinedNegativeTripletSelector
+                          SemihardNegativeTripletSelector, CombinedNegativeTripletSelector, \
+                          RandAndSemiNegativeTripletSelector
 from lightning_module import LitTriplet
 
 
@@ -38,7 +39,8 @@ def parse_args():
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--online', type=str, choices=['random_negative', 'hardest_negative',
-                                                       'semihard_negative', 'combined_negative'],  default=None)
+                                                       'semihard_negative', 'combined_negative',
+                                                        'combined_random_semihard_negative'],  default=None)
     parser.add_argument('--margin', type=float, default=1.)
     parser.add_argument('--system', type=str, choices=['windows', 'linux'], default='linux')
     parser.add_argument('--logs_path', type=str, default="../exps/light_logs/")
@@ -86,6 +88,8 @@ if __name__ == "__main__":
             triplet_loss = OnlineTripletLoss(margin, SemihardNegativeTripletSelector(margin))
         elif args.online == 'combined_negative':
             triplet_loss = OnlineTripletLoss(margin, CombinedNegativeTripletSelector(margin))
+        elif args.online == 'combined_random_semihard_negative':
+            triplet_loss = OnlineTripletLoss(margin, RandAndSemiNegativeTripletSelector(margin))
         else:
             raise ValueError
     else:

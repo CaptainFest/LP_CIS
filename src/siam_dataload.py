@@ -272,3 +272,11 @@ def CombinedNegativeTripletSelector(margin, cpu=False):
                                                lambda x: semihard_negative(x, margin)],
                                            cpu=cpu,
                                            combined=True)
+
+def RandAndSemiNegativeTripletSelector(margin, cpu=False):
+    return FunctionNegativeTripletSelector(margin=margin,
+                                           negative_selection_fn=[
+                                               random_hard_negative,
+                                               lambda x: semihard_negative(x, margin)],
+                                           cpu=cpu,
+                                           combined=True)
