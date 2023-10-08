@@ -233,7 +233,7 @@ class FunctionNegativeTripletSelector:
                 if not self.combined:
                     hard_negative = self.negative_selection_fn(loss_values)
                 else:
-                    index = random.randint(0, len(self.negative_selection_fn))
+                    index = random.randint(0, len(self.negative_selection_fn)-1)
                     hard_negative = self.negative_selection_fn[index](loss_values)
                 if hard_negative is not None:
                     hard_negative = negative_indices[hard_negative]
