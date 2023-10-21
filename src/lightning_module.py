@@ -123,6 +123,17 @@ class LitTriplet(l.LightningModule):
         }
 
 
+def metrics_init(classes):
+    accuracy = MulticlassAccuracy(classes, average='macro').to('cuda')
+    precision = MulticlassPrecision(classes, average='macro').to('cuda')
+    recall = MulticlassRecall(classes, average='macro').to('cuda')
+    f1_score = MulticlassF1Score(classes, average='macro').to('cuda')
+    cf_matrix = MulticlassConfusionMatrix(classes).to('cuda')
+    metrics = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1_score': f1_score,
+               'cf_matrix': cf_matrix}
+    return metrics
+
+
 class BaseClf(l.LightningModule):
     def __init__(self, model, classes: int, save_folder: str, exp_name: str):
         super().__init__()
@@ -135,18 +146,8 @@ class BaseClf(l.LightningModule):
         self.batch_preds = {'train': [], 'valid': []}
         self.validation_batch_preds = []
 
-        self.metrics = {'train': self.metrics_init(self.classes),
-                        'valid': self.metrics_init(self.classes)}
-
-    def metrics_init(self, classes):
-        accuracy = MulticlassAccuracy(classes, average='macro').to('cuda')
-        precision = MulticlassPrecision(classes, average='macro').to('cuda')
-        recall = MulticlassRecall(classes, average='macro').to('cuda')
-        f1_score = MulticlassF1Score(classes, average='macro').to('cuda')
-        cf_matrix = MulticlassConfusionMatrix(classes).to('cuda')
-        metrics = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1_score': f1_score,
-                   'cf_matrix': cf_matrix}
-        return metrics
+        self.metrics = {'train': metrics_init(self.classes),
+                        'valid': metrics_init(self.classes)}
 
     def forward(self, x):
         output = self.embedding_net(x)
@@ -212,7 +213,7 @@ class BaseClf(l.LightningModule):
         data.to_csv(os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv'), index=False)
 
 
-class LitClf(BaseClf):
+class LitClf(l.LightningModule):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
         super().__init__(embedding_net, n_classes)
         self.embedding_net = embedding_net
@@ -234,3 +235,61 @@ class LitClf(BaseClf):
 
     def get_embedding(self, x):
         return self.nonlinear(self.embedding_net(x))
+
+    def _shared_eval(self, batch, mode="train"):
+        batch_data, batch_labels = batch
+        outputs = self.embedding_net(batch_data)
+        loss = nn.CrossEntropyLoss(outputs, batch_labels)
+        log = {f"{mode}_loss": loss}
+        for metric in self.metrics[mode]:
+            self.metrics[mode][metric].update(outputs, batch_labels)
+            log[metric] = self.metrics[mode][metric].compute()
+            if metric == 'accuracy':
+                log["progress_bar"] = {metric: self.metrics[mode][metric].compute()}
+        self.log_dict(log)
+        return loss
+
+    def training_step(self, batch_data, batch_idx):
+        loss = self._shared_eval(batch_data, mode='train')
+        return loss
+
+    def validation_step(self, batch_data, batch_idx):
+        loss = self._shared_eval(batch_data, mode='valid')
+        return loss
+
+    def on_train_epoch_end(self):
+        results = {metric: self.metrics['train'][metric].compute() for metric in self.metrics['train']}
+        self.save_model()
+        self.save_epoch_results(results, 'train')
+
+    def on_validation_epoch_end(self):
+        results = {metric: self.metrics['valid'][metric].compute() for metric in self.metrics['valid']}
+        self.save_epoch_results(results, 'valid')
+
+    def configure_optimizers(self):
+        optimizer = Adam(self.parameters(), lr=1e-2)
+        scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_loss",
+                "interval": "epoch"
+            }
+        }
+
+    def save_model(self):
+        if self.save_path is not None:
+            os.makedirs(os.path.join(self.save_path, self.exp_name), exist_ok=True)
+            model_name = f"basenet_ep{self.current_epoch}.pth"
+            torch.save(self.embedding_net.state_dict(), os.path.join(self.save_path, self.exp_name, model_name))
+
+    def save_epoch_results(self, results, mode: str):
+        results['epoch'] = self.current_epoch
+        res_path = os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv')
+        if os.path.exists(res_path):
+            data = pd.read_csv(res_path)
+            data = pd.concat([data, results], ignore_index=True)
+        else:
+            data = pd.DataFrame(data=results)
+        data.to_csv(os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv'), index=False)
