@@ -215,7 +215,7 @@ class BaseClf(pl.LightningModule):
         }
 
     def save_model(self):
-        if self.save_path is not None:
+        if self.save_folder is not None:
             os.makedirs(os.path.join(self.save_folder, self.exp_name), exist_ok=True)
             model_name = f"basenet_ep{self.current_epoch}.pth"
             torch.save(self.embedding_net.state_dict(), os.path.join(self.save_path, self.exp_name, model_name))
