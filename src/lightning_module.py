@@ -1,5 +1,6 @@
 import os
 import torch
+import numpy as np
 import pandas as pd
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -134,6 +135,13 @@ def metrics_init(classes):
     return metrics
 
 
+def get_reg_names():
+    data = pd.read_csv('../data/train_all_OCR_df.csv')
+    reg_names = [data[data['reg_label'] == reg_label].iloc[0]['reg_name'] for reg_label in
+                 np.unique(data['reg_label'])]
+    return reg_names
+
+
 class BaseClf(pl.LightningModule):
     def __init__(self, model, classes: int, save_folder: str, exp_name: str):
         super().__init__()
@@ -147,6 +155,7 @@ class BaseClf(pl.LightningModule):
         self.batch_preds = {'train': [], 'valid': []}
         self.validation_batch_preds = []
 
+        self.reg_names = get_reg_names()
         self.metrics = {'train': metrics_init(self.classes),
                         'valid': metrics_init(self.classes)}
 
@@ -163,7 +172,8 @@ class BaseClf(pl.LightningModule):
         log = {f"{mode}_loss": loss}
         for metric in self.metrics[mode]:
             self.metrics[mode][metric].update(outputs, batch_labels)
-            log[metric] = self.metrics[mode][metric].compute()
+            if metric != 'cf_matrix':
+                log[metric] = self.metrics[mode][metric].compute()
             if metric == 'accuracy':
                 log["progress_bar"] = {metric: self.metrics[mode][metric].compute()}
         self.log_dict(log)
@@ -178,13 +188,18 @@ class BaseClf(pl.LightningModule):
         return loss
 
     def on_train_epoch_end(self):
-        results = {metric: self.metrics['train'][metric].compute() for metric in self.metrics['train']}
+        results = {
+            metric: self.metrics['train'][metric].compute() for metric in self.metrics['train']
+            if metric != 'cf_matrix'
+        }
         self.save_model()
         self.save_epoch_results(results, 'train')
+        self.save_cf_matrix(self.metrics['train']['cf_matrix'])
 
     def on_validation_epoch_end(self):
         results = {metric: self.metrics['valid'][metric].compute() for metric in self.metrics['valid']}
         self.save_epoch_results(results, 'valid')
+        self.save_cf_matrix(self.metrics['valid']['cf_matrix'])
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-2)
@@ -214,6 +229,10 @@ class BaseClf(pl.LightningModule):
             data = pd.DataFrame(data=results)
         data.to_csv(os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv'), index=False)
 
+    def save_cf_matrix(self, matrix):
+        fig, ax = matrix.plot(labels=self.reg_names)
+        fig.suptitle(f'{self.exp_name}_curep_{self.current_epoch}')
+        fig.savefig(os.path.join(self.save_path, self.exp_name, f"cf_matrix_ep{self.current_epoch}.png"))
 
 class LitClf(pl.LightningModule):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
