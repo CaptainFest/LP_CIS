@@ -226,6 +226,7 @@ class BaseClf(pl.LightningModule):
             data = pd.read_csv(res_path)
             data = pd.concat([data, results], ignore_index=True)
         else:
+            print(results)
             data = pd.DataFrame(data=results)
         data.to_csv(os.path.join(self.save_folder, self.exp_name, f'ep_log_{mode}.csv'), index=False)
 
