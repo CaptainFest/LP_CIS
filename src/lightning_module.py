@@ -230,6 +230,7 @@ class BaseClf(pl.LightningModule):
         res_path = os.path.join(self.save_folder, self.exp_name, f'ep_log_{mode}.csv')
         if os.path.exists(res_path):
             data = pd.read_csv(res_path)
+            results = pd.DataFrame(data=results)
             data = pd.concat([data, results], ignore_index=True)
         else:
             # sprint(results)
