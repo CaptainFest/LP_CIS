@@ -157,6 +157,7 @@ class BaseClf(pl.LightningModule):
     def _shared_eval(self, batch, mode="train"):
         batch_data, batch_labels = batch
         outputs = self.embedding_net(batch_data)
+        print(outputs.shape, batch_labels.shape)
         loss = nn.CrossEntropyLoss(outputs, batch_labels)
         log = {f"{mode}_loss": loss}
         for metric in self.metrics[mode]:
