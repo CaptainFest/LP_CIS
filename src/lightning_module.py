@@ -1,9 +1,13 @@
 import os
 import torch
-import lightning as l
+import pandas as pd
 import torch.nn as nn
+import lightning as l
 from torchvision import models
 from torch.optim import lr_scheduler, Adam
+
+from torchmetrics.classification import MulticlassAccuracy, MulticlassRecall, MulticlassPrecision, MulticlassF1Score, \
+    MulticlassConfusionMatrix
 
 
 class EmbedNetwork(nn.Module):
@@ -119,61 +123,65 @@ class LitTriplet(l.LightningModule):
         }
 
 
-class LitClf(nn.Module):
-    def __init__(self, embedding_net, emb_size: int, n_classes: int):
+class BaseClf(l.LightningModule):
+    def __init__(self, model, classes: int, save_folder: str, exp_name: str):
         super().__init__()
-        self.embedding_net = embedding_net
-        self.n_classes = n_classes
-        self.nonlinear = nn.PReLU()
-        self.fc1 = nn.Linear(emb_size, n_classes)
+        self.embedding_net = model
+        self.classes = classes
+
+        self.save_folder = save_folder
+        self.exp_name = exp_name
 
         self.batch_preds = {'train': [], 'valid': []}
         self.validation_batch_preds = []
 
-    def forward(self, x):
-        output = self.embedding_net.get_embedding(x)
-        output = self.nonlinear(output)
-        scores = nn.functional.log_softmax(self.fc1(output), dim=-1)
-        return scores
+        self.metrics = {'train': self.metrics_init(self.classes),
+                        'valid': self.metrics_init(self.classes)}
 
-    def get_embedding(self, x):
-        return self.nonlinear(self.embedding_net(x))
+    def metrics_init(self, classes):
+        accuracy = MulticlassAccuracy(classes, average='macro').to('cuda')
+        precision = MulticlassPrecision(classes, average='macro').to('cuda')
+        recall = MulticlassRecall(classes, average='macro').to('cuda')
+        f1_score = MulticlassF1Score(classes, average='macro').to('cuda')
+        cf_matrix = MulticlassConfusionMatrix(classes).to('cuda')
+        metrics = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1_score': f1_score,
+                   'cf_matrix': cf_matrix}
+        return metrics
+
+    def forward(self, x):
+        output = self.embedding_net(x)
+        # scores = nn.functional.log_softmax(self.fc1(output), dim=-1)
+        return output
 
     def _shared_eval(self, batch, mode="train"):
         batch_data, batch_labels = batch
         outputs = self.embedding_net(batch_data)
         loss = nn.CrossEntropyLoss(outputs, batch_labels)
-        batch_preds = outputs.argmax(1)
-        accuracy = (batch_preds == batch_labels).sum().item() / (float(len(batch_labels) + 1e-20))
-        self.batch_preds[mode].append(batch_preds)
-        self.batch_labels[mode].append(batch_labels)
-        self.log_dict({f"{mode}_loss": loss, "accuracy": accuracy, "progress_bar": {"accuracy": accuracy}})
-        return loss, accuracy
+        log = {f"{mode}_loss": loss}
+        for metric in self.metrics[mode]:
+            self.metrics[mode][metric].update(outputs, batch_labels)
+            log[metric] = self.metrics[mode][metric].compute()
+            if metric == 'accuracy':
+                log["progress_bar"] = {metric: self.metrics[mode][metric].compute()}
+        self.log_dict(log)
+        return loss
 
     def training_step(self, batch_data, batch_idx):
-        loss, accuracy = self._shared_eval(batch_data, mode='train')
-        self.log_dict({"train_loss": loss, "accuracy": accuracy, "progress_bar": {"accuracy": accuracy}})
+        loss = self._shared_eval(batch_data, mode='train')
         return loss
 
     def validation_step(self, batch_data, batch_idx):
-        loss, accuracy = self._shared_eval(batch_data, mode='train')
-        self.log_dict({"train_loss": loss, "accuracy": accuracy, "progress_bar": {"accuracy": accuracy}})
+        loss = self._shared_eval(batch_data, mode='valid')
+        return loss
 
     def on_train_epoch_end(self):
-        all_preds = torch.hstack(self.self.batch_preds['train'])
-        all_labels = torch.hstack(self.self.batch_labels['train'])
-        accuracy = (all_preds == all_labels).sum().item() / (float(len(all_labels) + 1e-20))
-        self.log = 1 # TO DO
-        self.batch_labels['train'].clear()
-        self.batch_preds['train'].clear()
+        results = {metric: self.metrics['train'][metric].compute() for metric in self.metrics['train']}
+        self.save_model()
+        self.save_epoch_results(results, 'train')
 
     def on_validation_epoch_end(self):
-        all_preds = torch.stack(self.batch_preds['valid'])
-        all_labels = torch.hstack(self.self.batch_labels['valid'])
-        accuracy = (all_preds == all_labels).sum().item() / (float(len(all_labels) + 1e-20))
-        self.log = 1  # TO DO
-        self.batch_labels['valid'].clear()
-        self.batch_preds['valid'].clear()
+        results = {metric: self.metrics['valid'][metric].compute() for metric in self.metrics['valid']}
+        self.save_epoch_results(results, 'valid')
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-2)
@@ -186,3 +194,43 @@ class LitClf(nn.Module):
                 "interval": "epoch"
             }
         }
+
+    def save_model(self):
+        if self.save_path is not None:
+            os.makedirs(os.path.join(self.save_path, self.exp_name), exist_ok=True)
+            model_name = f"basenet_ep{self.current_epoch}.pth"
+            torch.save(self.embedding_net.state_dict(), os.path.join(self.save_path, self.exp_name, model_name))
+
+    def save_epoch_results(self, results, mode: str):
+        results['epoch'] = self.current_epoch
+        res_path = os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv')
+        if os.path.exists(res_path):
+            data = pd.read_csv(res_path)
+            data = pd.concat([data, results], ignore_index=True)
+        else:
+            data = pd.DataFrame(data=results)
+        data.to_csv(os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv'), index=False)
+
+
+class LitClf(BaseClf):
+    def __init__(self, embedding_net, emb_size: int, n_classes: int):
+        super().__init__(embedding_net, n_classes)
+        self.embedding_net = embedding_net
+        self.n_classes = n_classes
+        self.nonlinear = nn.PReLU()
+        self.fc1 = nn.Linear(emb_size, n_classes)
+
+        self.batch_preds = {'train': [], 'valid': []}
+        self.validation_batch_preds = []
+
+        self.metrics = {'train': self.metrics_init(self.classes),
+                        'valid': self.metrics_init(self.classes)}
+
+    def forward(self, x):
+        output = self.embedding_net.get_embedding(x)
+        output = self.nonlinear(output)
+        scores = nn.functional.log_softmax(self.fc1(output), dim=-1)
+        return scores
+
+    def get_embedding(self, x):
+        return self.nonlinear(self.embedding_net(x))
