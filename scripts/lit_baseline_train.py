@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
+from lightning.pytorch import loggers as pl_loggers
 from torch.optim import lr_scheduler, Adam
 from torch.utils.data import Dataset, DataLoader
 
@@ -15,6 +16,10 @@ from training import fit
 from siam_model import EmbedNetwork
 from siam_dataload import SingleDataset, prepare_multilingual_OCR_dataset
 from lightning_module import BaseClf
+
+
+def save_hps2logger(logger, args):
+    logger.log_hyperparams(vars(args))
 
 
 def parse_args():
@@ -29,6 +34,7 @@ def parse_args():
     parser.add_argument('--save_folder', type=str, default='/nfs/home/isaitov/NL/data/siam/')
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None)
+    parser.add_argument('--logs_path', type=str, default="../exps/light_logs/")
     args = parser.parse_args()
     return args
 
@@ -48,7 +54,16 @@ if __name__ == "__main__":
     emb_net = EmbedNetwork(args.classes)
     model = BaseClf(emb_net, args.classes, args.save_folder, args.exp_name)
 
-    trainer = pl.Trainer(max_epochs=args.epochs)
+    comet_logger = pl_loggers.CometLogger(
+        api_key='fdnVusaeA1HEamDdLRAIQH6xW',
+        project_name="region-recognition",
+        workspace="captainfest",
+        experiment_name=args.exp_name,
+        save_dir=args.logs_path
+    )
+
+    save_hps2logger(comet_logger, args)
+    trainer = pl.Trainer(max_epochs=args.epochs, logger=comet_logger)
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=test_loader)
 
     #log_interval = 100

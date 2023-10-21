@@ -177,7 +177,8 @@ class BaseClf(pl.LightningModule):
                 log[metric] = self.metrics[mode][metric].compute()
             if metric == 'accuracy':
                 log["progress_bar"] = {metric: self.metrics[mode][metric].compute()}
-        self.log_dict(log)
+        self.log_dict(log, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        # self.log(f"{mode}_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def training_step(self, batch_data, batch_idx):
@@ -220,7 +221,9 @@ class BaseClf(pl.LightningModule):
 
     def save_model(self):
         model_name = f"basenet_ep{self.current_epoch}.pth"
-        torch.save(self.embedding_net.state_dict(), os.path.join(self.save_folder, self.exp_name, model_name))
+        model_fp = os.path.join(self.save_folder, self.exp_name, model_name)
+        torch.save(self.embedding_net.state_dict(), model_fp)
+        self.logger.experiment.log_model(model_name, model_fp)
 
     def save_epoch_results(self, results, mode: str):
         results['epoch'] = self.current_epoch
