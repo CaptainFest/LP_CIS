@@ -2,7 +2,7 @@ import os
 import torch
 import pandas as pd
 import torch.nn as nn
-import lightning as l
+import pytorch_lightning as pl
 from torchvision import models
 from torch.optim import lr_scheduler, Adam
 
@@ -45,7 +45,7 @@ class EmbedNetwork(nn.Module):
         return output
 
 
-class LitTriplet(l.LightningModule):
+class LitTriplet(pl.LightningModule):
     def __init__(self, last_feat_num: int, loss_fn, online):
         super().__init__()
         # get resnet model
@@ -134,7 +134,7 @@ def metrics_init(classes):
     return metrics
 
 
-class BaseClf(l.LightningModule):
+class BaseClf(pl.LightningModule):
     def __init__(self, model, classes: int, save_folder: str, exp_name: str):
         super().__init__()
         self.embedding_net = model
@@ -213,7 +213,7 @@ class BaseClf(l.LightningModule):
         data.to_csv(os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv'), index=False)
 
 
-class LitClf(l.LightningModule):
+class LitClf(pl.LightningModule):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
         super().__init__(embedding_net, n_classes)
         self.embedding_net = embedding_net
