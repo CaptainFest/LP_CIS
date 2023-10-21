@@ -124,11 +124,11 @@ class LitTriplet(pl.LightningModule):
 
 
 def metrics_init(classes):
-    accuracy = MulticlassAccuracy(classes, average='macro').to('cuda')
-    precision = MulticlassPrecision(classes, average='macro').to('cuda')
-    recall = MulticlassRecall(classes, average='macro').to('cuda')
-    f1_score = MulticlassF1Score(classes, average='macro').to('cuda')
-    cf_matrix = MulticlassConfusionMatrix(classes).to('cuda')
+    accuracy = MulticlassAccuracy(classes, average='macro') #.to('cuda')
+    precision = MulticlassPrecision(classes, average='macro') #.to('cuda')
+    recall = MulticlassRecall(classes, average='macro') #.to('cuda')
+    f1_score = MulticlassF1Score(classes, average='macro') #.to('cuda')
+    cf_matrix = MulticlassConfusionMatrix(classes) #.to('cuda')
     metrics = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1_score': f1_score,
                'cf_matrix': cf_matrix}
     return metrics
