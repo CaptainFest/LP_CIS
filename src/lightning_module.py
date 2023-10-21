@@ -215,24 +215,24 @@ class BaseClf(pl.LightningModule):
 
     def save_model(self):
         if self.save_path is not None:
-            os.makedirs(os.path.join(self.save_path, self.exp_name), exist_ok=True)
+            os.makedirs(os.path.join(self.save_folder, self.exp_name), exist_ok=True)
             model_name = f"basenet_ep{self.current_epoch}.pth"
             torch.save(self.embedding_net.state_dict(), os.path.join(self.save_path, self.exp_name, model_name))
 
     def save_epoch_results(self, results, mode: str):
         results['epoch'] = self.current_epoch
-        res_path = os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv')
+        res_path = os.path.join(self.save_folder, self.exp_name, f'ep_log_{mode}.csv')
         if os.path.exists(res_path):
             data = pd.read_csv(res_path)
             data = pd.concat([data, results], ignore_index=True)
         else:
             data = pd.DataFrame(data=results)
-        data.to_csv(os.path.join(self.save_path, self.exp_name, f'ep_log_{mode}.csv'), index=False)
+        data.to_csv(os.path.join(self.save_folder, self.exp_name, f'ep_log_{mode}.csv'), index=False)
 
     def save_cf_matrix(self, matrix):
         fig, ax = matrix.plot(labels=self.reg_names)
         fig.suptitle(f'{self.exp_name}_curep_{self.current_epoch}')
-        fig.savefig(os.path.join(self.save_path, self.exp_name, f"cf_matrix_ep{self.current_epoch}.png"))
+        fig.savefig(os.path.join(self.save_folder, self.exp_name, f"cf_matrix_ep{self.current_epoch}.png"))
 
 class LitClf(pl.LightningModule):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
