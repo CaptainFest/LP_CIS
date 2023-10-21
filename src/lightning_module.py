@@ -197,7 +197,8 @@ class BaseClf(pl.LightningModule):
         self.save_cf_matrix(self.metrics['train']['cf_matrix'])
 
     def on_validation_epoch_end(self):
-        results = {metric: [self.metrics['valid'][metric].compute().item()] for metric in self.metrics['valid']}
+        results = {metric: [self.metrics['valid'][metric].compute().item()] for metric in self.metrics['valid']
+                   if metric != 'cf_matrix'}
         self.save_epoch_results(results, 'valid')
         self.save_cf_matrix(self.metrics['valid']['cf_matrix'])
 
