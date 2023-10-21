@@ -175,8 +175,6 @@ class BaseClf(pl.LightningModule):
             self.metrics[mode][metric].update(outputs, batch_labels)
             if metric != 'cf_matrix':
                 log[metric] = self.metrics[mode][metric].compute()
-            if metric == 'accuracy':
-                log["progress_bar"] = {metric: self.metrics[mode][metric].compute()}
         self.log_dict(log, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         # self.log(f"{mode}_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
