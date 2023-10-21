@@ -151,6 +151,7 @@ class BaseClf(pl.LightningModule):
 
         self.save_folder = save_folder
         self.exp_name = exp_name
+        self.mk_exp_dir()
 
         self.batch_preds = {'train': [], 'valid': []}
         self.validation_batch_preds = []
@@ -214,11 +215,12 @@ class BaseClf(pl.LightningModule):
             }
         }
 
+    def mk_exp_dir(self):
+        os.makedirs(os.path.join(self.save_folder, self.exp_name), exist_ok=True)
+
     def save_model(self):
-        if self.save_folder is not None:
-            os.makedirs(os.path.join(self.save_folder, self.exp_name), exist_ok=True)
-            model_name = f"basenet_ep{self.current_epoch}.pth"
-            torch.save(self.embedding_net.state_dict(), os.path.join(self.save_path, self.exp_name, model_name))
+        model_name = f"basenet_ep{self.current_epoch}.pth"
+        torch.save(self.embedding_net.state_dict(), os.path.join(self.save_folder, self.exp_name, model_name))
 
     def save_epoch_results(self, results, mode: str):
         results['epoch'] = self.current_epoch
