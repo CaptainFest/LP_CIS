@@ -194,13 +194,13 @@ class BaseClf(pl.LightningModule):
         }
         self.save_model()
         self.save_epoch_results(results, 'train')
-        self.save_cf_matrix(self.metrics['train']['cf_matrix'])
+        self.save_cf_matrix(self.metrics['train']['cf_matrix'], 'train')
 
     def on_validation_epoch_end(self):
         results = {metric: [self.metrics['valid'][metric].compute().item()] for metric in self.metrics['valid']
                    if metric != 'cf_matrix'}
         self.save_epoch_results(results, 'valid')
-        self.save_cf_matrix(self.metrics['valid']['cf_matrix'])
+        self.save_cf_matrix(self.metrics['valid']['cf_matrix'], 'valid')
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-2)
@@ -235,11 +235,17 @@ class BaseClf(pl.LightningModule):
             data = pd.DataFrame(data=results)
         data.to_csv(os.path.join(self.save_folder, self.exp_name, f'ep_log_{mode}.csv'), index=False)
 
-    def save_cf_matrix(self, matrix):
+    def save_cf_matrix(self, matrix, mode: str):
         fig, ax = matrix.plot(labels=self.reg_names)
         fig.set_size_inches(18.5, 10.5)
         fig.suptitle(f'{self.exp_name}_curep_{self.current_epoch}')
         fig.savefig(os.path.join(self.save_folder, self.exp_name, f"cf_matrix_ep{self.current_epoch}.png"), dpi=100)
+        matrix.compute()
+        self.logger.experiment.log_confusion_matrix(
+            matrix=matrix,
+            title=f"Confusion Matrix, {mode}, Epoch {self.current_epoch + 1}",
+            file_name=f"confusion-matrix-{mode}-{self.current_epoch + 1}.json"
+        )
 
 class LitClf(pl.LightningModule):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
