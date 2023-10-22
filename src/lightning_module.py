@@ -237,8 +237,9 @@ class BaseClf(pl.LightningModule):
 
     def save_cf_matrix(self, matrix):
         fig, ax = matrix.plot(labels=self.reg_names)
+        fig.set_size_inches(18.5, 10.5)
         fig.suptitle(f'{self.exp_name}_curep_{self.current_epoch}')
-        fig.savefig(os.path.join(self.save_folder, self.exp_name, f"cf_matrix_ep{self.current_epoch}.png"))
+        fig.savefig(os.path.join(self.save_folder, self.exp_name, f"cf_matrix_ep{self.current_epoch}.png"), dpi=100)
 
 class LitClf(pl.LightningModule):
     def __init__(self, embedding_net, emb_size: int, n_classes: int):
